@@ -1,0 +1,2312 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="23.11.0.0">
+<procedure name="main">
+<interface/>
+<body>
+<c>* </c>
+<c>* This example is part of a series of examples, which summarizes</c>
+<c>* the workflow for DL object detection. It uses the MVTec pill bag dataset.</c>
+<c>* </c>
+<c>* The four parts are:</c>
+<c>* 1. Creation of the model and dataset preprocessing.</c>
+<c>* 2. Training of the model.</c>
+<c>* 3. Evaluation of the trained model.</c>
+<c>* 4. Inference on new images.</c>
+<c>* </c>
+<c>* This example contains part 3: 'Evaluation of the trained model'.</c>
+<c>* </c>
+<c>* It explains how to evaluate an object detection model and how to compare</c>
+<c>* different models.</c>
+<c>* </c>
+<c>* Please note: This script requires the output of part 1:</c>
+<c>* detect_pills_deep_learning_1_prepare.hdev</c>
+<c>* If you set UsePretrainedModel := false, the output of part 2 is</c>
+<c>* also required:</c>
+<c>* detect_pills_deep_learning_2_train.hdev</c>
+<c>* </c>
+<l>dev_update_off ()</l>
+<c>* </c>
+<c>* In this example, the evaluation steps are explained in graphics windows,</c>
+<c>* before they are executed. Set the following parameter to false in order to</c>
+<c>* skip this visualization.</c>
+<l>ShowExampleScreens := false</l>
+<c>* </c>
+<c>* By default, this example uses a model pretrained by MVTec. To use the model</c>
+<c>* which was trained in part 2 of this example series, set the following</c>
+<c>* variable to false.</c>
+<l>UsePretrainedModel := false</l>
+<c>* </c>
+<c>* The evaluation can be performed on GPU or CPU.</c>
+<c>* See the respective system requirements in the Installation Guide.</c>
+<c>* If possible a GPU is used in this example.</c>
+<c>* In case you explicitly wish to run this example on the CPU,</c>
+<c>* choose the CPU device instead.</c>
+<l>query_available_dl_devices (['runtime', 'runtime'], ['gpu', 'cpu'], DLDeviceHandles)</l>
+<l>if (|DLDeviceHandles| == 0)</l>
+<l>    throw ('No supported device found to continue this example.')</l>
+<l>endif</l>
+<c>* Due to the filter used in query_available_dl_devices, the first device is a GPU, if available.</c>
+<l>DLDevice := DLDeviceHandles[0]</l>
+<c>* </c>
+<l>if (ShowExampleScreens)</l>
+<c>    * </c>
+<c>    * Initial example windows and parameters etc.</c>
+<l>    dev_example_init (ShowExampleScreens, UsePretrainedModel, ExampleInternals)</l>
+<c>    * </c>
+<c>    * Introduction text of example series.</c>
+<l>    dev_display_screen_introduction_part_1 (ExampleInternals)</l>
+<l>    stop ()</l>
+<l>    dev_display_screen_introduction_part_2 (ExampleInternals)</l>
+<l>    stop ()</l>
+<c>    * </c>
+<c>    * Introduction text about the evaluation of a model.</c>
+<l>    dev_display_screen_introduction_evaluation (ExampleInternals)</l>
+<l>    stop ()</l>
+<c>    * </c>
+<c>    * Explain the parameter 'measures'.</c>
+<l>    dev_display_screen_explain_measures (ExampleInternals)</l>
+<l>    stop ()</l>
+<c>    * </c>
+<c>    * Explain the parameter 'iou_threshold'.</c>
+<l>    dev_display_screen_explain_iou_threshold (ExampleInternals)</l>
+<l>    stop ()</l>
+<c>    * </c>
+<c>    * Explain the parameter 'area_ranges'.</c>
+<l>    dev_display_screen_explain_area_ranges (ExampleInternals)</l>
+<l>    stop ()</l>
+<c>    * </c>
+<c>    * Explain the parameter 'max_num_detections'.</c>
+<l>    dev_display_screen_explain_max_num_detections (ExampleInternals)</l>
+<l>    stop ()</l>
+<c>    * </c>
+<c>    * Display the results for an example evaluation.</c>
+<l>    dev_display_screen_explain_evaluation (ExampleInternals)</l>
+<l>    stop ()</l>
+<c>    * </c>
+<c>    * Explain detection scenarios.</c>
+<l>    dev_display_screen_explain_detection_scenarios_part_1 (ExampleInternals)</l>
+<l>    stop ()</l>
+<l>    dev_display_screen_explain_detection_scenarios_part_2 (ExampleInternals)</l>
+<l>    stop ()</l>
+<l>    dev_display_screen_explain_detection_scenarios_part_3 (ExampleInternals)</l>
+<l>    stop ()</l>
+<l>    dev_display_screen_explain_detection_scenarios_part_4 (ExampleInternals)</l>
+<l>    stop ()</l>
+<l>    dev_display_screen_explain_detection_scenarios_part_5 (ExampleInternals)</l>
+<l>    stop ()</l>
+<l>    dev_display_screen_explain_detection_scenarios_part_6 (ExampleInternals)</l>
+<l>    stop ()</l>
+<l>    dev_display_screen_explain_detection_scenarios_part_7 (ExampleInternals)</l>
+<l>    stop ()</l>
+<l>    dev_display_screen_explain_detection_scenarios_part_8 (ExampleInternals)</l>
+<l>    stop ()</l>
+<c>    * </c>
+<c>    * Display detailed overview of the precision of the model.</c>
+<l>    dev_display_screen_explain_detailed_evaluation_part_1 (ExampleInternals)</l>
+<l>    stop ()</l>
+<c>    * </c>
+<c>    * Display detailed overview of the recall of the model.</c>
+<l>    dev_display_screen_explain_detailed_evaluation_part_2 (ExampleInternals)</l>
+<l>    stop ()</l>
+<c>    * </c>
+<c>    * Display detection confusion matrix.</c>
+<l>    dev_display_screen_explain_detailed_evaluation_part_3 (ExampleInternals)</l>
+<l>    stop ()</l>
+<c>    * </c>
+<c>    * Model optimization.</c>
+<l>    dev_display_screen_model_optimization_info (ExampleInternals)</l>
+<l>    stop ()</l>
+<c>    * </c>
+<c>    * Mention on which device the deep learning operators will run.</c>
+<l>    dev_display_screen_device (ExampleInternals, DLDevice)</l>
+<l>    stop ()</l>
+<c>    * </c>
+<c>    * Run the program.</c>
+<l>    dev_display_screen_run_program (ExampleInternals)</l>
+<l>    stop ()</l>
+<c>    * </c>
+<c>    * Close all example windows, if necessary.</c>
+<l>    dev_close_example_windows (ExampleInternals)</l>
+<l>endif</l>
+<c>* </c>
+<c>* *******************</c>
+<c>* **   Set paths  ***</c>
+<c>* *******************</c>
+<c>* </c>
+<c>* Example data folder containing the outputs of the previous example series.</c>
+<l>ExampleDataDir := '/home/dika/Documents/PKM_program/Dataset/Plate'</l>
+<c>* </c>
+<c>* Path to finetuned model to evaluate.</c>
+<l>if (UsePretrainedModel)</l>
+<c>    * Use the pretrained model shipping with HALCON.</c>
+<l>    RetrainedModelFileName := 'detect_pills.hdl'</l>
+<l>else</l>
+<c>    * File name of the finetuned object detection model.</c>
+<l>    RetrainedModelFileName := ExampleDataDir + '/best_dl_model_detection.hdl'</l>
+<l>endif</l>
+<c>* </c>
+<c>* Path to DL dataset.</c>
+<c>* Note: Adapt DataDirectory after preprocessing with another image size.</c>
+<l>DataDirectory := ExampleDataDir + '/dldataset_plate_bag_test640x640'</l>
+<l>DLDatasetFileName := DataDirectory + '/dl_dataset.hdict'</l>
+<c>* </c>
+<c>* ***********************************</c>
+<c>* **   Set evaluation parameters  ***</c>
+<c>* ***********************************</c>
+<c>* </c>
+<c>* Specify measures of interest</c>
+<l>EvaluationMeasures := 'all'</l>
+<c>* </c>
+<c>* Specify considered IoU thresholds.</c>
+<l>IoUThresholds := []</l>
+<c>* </c>
+<c>* Display detailed results for the following IoU threshold.</c>
+<l>DisplayIoUThreshold := 0.7</l>
+<c>* </c>
+<c>* Batch size used during evaluation.</c>
+<l>BatchSize := 1</l>
+<c>* </c>
+<c>* Specify evaluation subsets for objects of a certain size.</c>
+<l>AreaNames := []</l>
+<l>AreaMin := []</l>
+<l>AreaMax := []</l>
+<c>* </c>
+<c>* Specify the maximum number of detections considered for each measure.</c>
+<l>MaxNumDetections := []</l>
+<c>* </c>
+<c>* *********************************</c>
+<c>* **   Read the model and data  ***</c>
+<c>* *********************************</c>
+<c>* </c>
+<c>* Check if all necessary files exist.</c>
+<l>check_data_availability (ExampleDataDir, DLDatasetFileName, RetrainedModelFileName, UsePretrainedModel)</l>
+<c>* </c>
+<c>* Read the trained model.</c>
+<l>read_dl_model (RetrainedModelFileName, DLModelHandle)</l>
+<c>* </c>
+<c>* Set batch size of the model to 1 temporarily.</c>
+<l>set_dl_model_param (DLModelHandle, 'batch_size', 1)</l>
+<c>* </c>
+<l>set_dl_model_param (DLModelHandle, 'device', DLDevice)</l>
+<c>* </c>
+<c>* Read the evaluation data.</c>
+<l>read_dict (DLDatasetFileName, [], [], DLDataset)</l>
+<c>* </c>
+<c>* ****************************************************************</c>
+<c>* **   Set optimized parameters for inference                  ***</c>
+<c>* ****************************************************************</c>
+<c>* </c>
+<c>* To reduce the number of false positives, set lower values for</c>
+<c>* 'max_overlap' (default = 0.5) and 'max_overlap_class_agnostic'</c>
+<c>* (default = 1.0) and a higher confidence threshold (default = 0.5).</c>
+<l>set_dl_model_param (DLModelHandle, 'max_overlap_class_agnostic', 0.7)</l>
+<l>set_dl_model_param (DLModelHandle, 'max_overlap', 0.2)</l>
+<l>set_dl_model_param (DLModelHandle, 'min_confidence', 0.6)</l>
+<c>* </c>
+<c>* ****************************************************************</c>
+<c>* **   First impression via visual inspection of results       ***</c>
+<c>* ****************************************************************</c>
+<c>* </c>
+<c>* Create parameter dictionaries for visualization.</c>
+<l>WindowHandleDict := dict{}</l>
+<l>GenParam := dict{bbox_display_confidence: false}</l>
+<c>* </c>
+<c>* Select test images randomly.</c>
+<l>find_dl_samples (DLDataset.samples, 'split', 'train', 'or', DLSampleIndices)</l>
+<l>tuple_shuffle (DLSampleIndices, DLSampleIndicesShuffled)</l>
+<c>* </c>
+<c>* Apply the model and display results.</c>
+<l>for Index := 0 to 5 by 1</l>
+<l>    read_dl_samples (DLDataset, DLSampleIndicesShuffled[Index], DLSampleBatch)</l>
+<l>    apply_dl_model (DLModelHandle, DLSampleBatch, [], DLResultBatch)</l>
+<l>    dev_display_dl_data (DLSampleBatch, DLResultBatch, DLDataset, 'bbox_both', GenParam, WindowHandleDict)</l>
+<l>    dev_disp_text ('Press Run (F5)\nto continue', 'window', 'bottom', 'right', 'black', [], [])</l>
+<l>    stop ()</l>
+<l>endfor</l>
+<c>* </c>
+<l>dev_close_window_dict (WindowHandleDict)</l>
+<l>set_dl_model_param (DLModelHandle, 'batch_size', BatchSize)</l>
+<c>* </c>
+<c>* ****************************************************************</c>
+<c>* **   Evaluate object detection model on evaluation data      ***</c>
+<c>* ****************************************************************</c>
+<c>* </c>
+<c>* Set generic evaluation parameters.</c>
+<l>GenParamEval := dict{}</l>
+<c>* Set the measures of interest.</c>
+<l>GenParamEval.measures := EvaluationMeasures</l>
+<c>* Set maximum number of detections considered for each measure.</c>
+<l>if (|MaxNumDetections|)</l>
+<l>    GenParamEval.max_num_detections := MaxNumDetections</l>
+<l>endif</l>
+<c>* Set the evaluation area subsets.</c>
+<l>if (|AreaNames|)</l>
+<l>    if ((|AreaNames| != |AreaMin|) or (|AreaNames| != |AreaMax|))</l>
+<l>        throw ('AreaNames, AreaMin, and AreaMax must have the same size.')</l>
+<l>    endif</l>
+<l>    AreaRanges := dict{}</l>
+<l>    AreaRanges.name := AreaNames</l>
+<l>    AreaRanges.min := AreaMin</l>
+<l>    AreaRanges.max := AreaMax</l>
+<l>    GenParamEval.area_ranges := AreaRanges</l>
+<l>endif</l>
+<c>* Set IoU thresholds.</c>
+<l>if (|IoUThresholds|)</l>
+<l>    GenParamEval.iou_threshold := IoUThresholds</l>
+<l>endif</l>
+<c>* Enable detailed evaluation.</c>
+<l>GenParamEval.detailed_evaluation := true</l>
+<c>* Show progress of evaluation.</c>
+<l>GenParamEval.show_progress := true</l>
+<c>* </c>
+<c>* Evaluate the finetuned model on the 'test' split of the dataset.</c>
+<l>evaluate_dl_model (DLDataset, DLModelHandle, 'split', 'train', GenParamEval, EvaluationResultDetection, EvalParams)</l>
+<c>* </c>
+<c>* Display results of the detailed evaluation.</c>
+<l>DisplayParam := dict{}</l>
+<c>* Set the IoU of interest. The default is the first 'iou_threshold' of EvalParams.</c>
+<l>if (|DisplayIoUThreshold| == 1)</l>
+<l>    EvalIoUThresholds := EvalParams.iou_threshold</l>
+<l>    if (find(EvalIoUThresholds,DisplayIoUThreshold) != -1)</l>
+<l>        DisplayParam.iou_threshold := DisplayIoUThreshold</l>
+<l>    else</l>
+<l>        throw ('No evaluation result for specified IoU threshold.')</l>
+<l>    endif</l>
+<l>endif</l>
+<c>* Display detailed precision and recall</c>
+<l>DisplayParam.display_mode := ['pie_charts_precision', 'pie_charts_recall']</l>
+<l>WindowHandleDict := dict{}</l>
+<l>dev_display_detection_detailed_evaluation (EvaluationResultDetection, EvalParams, DisplayParam, WindowHandleDict)</l>
+<l>dev_disp_text ('Press Run (F5) to continue', 'window', 'top', 'right', 'black', [], [])</l>
+<l>stop ()</l>
+<l>dev_close_window_dict (WindowHandleDict)</l>
+<c>* Display confusion matrix.</c>
+<l>DisplayParam.display_mode := 'absolute_confusion_matrix'</l>
+<l>dev_display_detection_detailed_evaluation (EvaluationResultDetection, EvalParams, DisplayParam, WindowHandleDict)</l>
+<l>dev_disp_text ('Press Run (F5) to continue', 'window', 'bottom', 'right', 'black', [], [])</l>
+<l>stop ()</l>
+<l>dev_close_window_dict (WindowHandleDict)</l>
+<c>* </c>
+<c>* Optimize the memory consumption.</c>
+<l>set_dl_model_param (DLModelHandle, 'batch_size', 1)</l>
+<l>set_dl_model_param (DLModelHandle, 'optimize_for_inference', 'true')</l>
+<l>write_dl_model (DLModelHandle, RetrainedModelFileName)</l>
+<c>* Close the windows.</c>
+<l>dev_close_window_dict (WindowHandleDict)</l>
+<c>* </c>
+<l>if (ShowExampleScreens)</l>
+<c>    * Final explanations.</c>
+<l>    dev_display_end_of_program (ExampleInternals)</l>
+<l>    stop ()</l>
+<c>    * Close example windows.</c>
+<l>    dev_close_example_windows (ExampleInternals)</l>
+<l>endif</l>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+<procedure name="dev_example_init">
+<interface>
+<ic>
+<par name="ShowExampleScreens" base_type="ctrl" dimension="0"/>
+<par name="UsePretrainedModel" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<c>* This procedure initializes the graphic windows that are used for explanations during the example.</c>
+<c>* </c>
+<c>* A dict that will be used/adapted by other example procedures.</c>
+<l>create_dict (ExampleInternals)</l>
+<l>set_dict_tuple (ExampleInternals, 'show_example_screens', ShowExampleScreens)</l>
+<l>set_dict_tuple (ExampleInternals, 'use_pretrained_model', UsePretrainedModel)</l>
+<l>dev_close_window ()</l>
+<c>* </c>
+<l>if (not ShowExampleScreens)</l>
+<l>    return ()</l>
+<l>endif</l>
+<c>* </c>
+<l>dev_display_example_init_text_window (ExampleInternals)</l>
+<c>* </c>
+<l>set_dict_tuple (ExampleInternals, 'window_images_needed', false)</l>
+<l>set_dict_tuple (ExampleInternals, 'window_legend_needed', false)</l>
+<c>* </c>
+<l>set_dict_tuple (ExampleInternals, 'clear_windows', 'all')</l>
+<c>* </c>
+<c>* Read a tiny dataset with a single sample from the pill bag dataset.</c>
+<l>create_tiny_example_dataset_with_result (DLDataset, DLResult)</l>
+<l>set_dict_tuple (ExampleInternals, 'example_dl_dataset', DLDataset)</l>
+<l>set_dict_tuple (ExampleInternals, 'example_dl_result', DLResult)</l>
+<c>* </c>
+<c>* Create example evaluation results and parameters</c>
+<l>read_dict ('detect_pills_deep_learning_3_evaluate_result.hdict', [], [], ExampleEvaluationResults)</l>
+<l>set_dict_tuple (ExampleInternals, 'example_evaluation_results', ExampleEvaluationResults)</l>
+<c>* </c>
+<l>ModelType := 'detection'</l>
+<l>get_dict_tuple (DLDataset, 'class_ids', ModelClassIDs)</l>
+<l>create_evaluation_default_param (ModelType, ModelClassIDs, ExampleEvaluationParams)</l>
+<l>set_dict_tuple (ExampleEvaluationParams, 'detailed_evaluation', true)</l>
+<l>set_dict_tuple (ExampleInternals, 'example_evaluation_params', ExampleEvaluationParams)</l>
+<l>return ()</l>
+</body>
+<docu id="dev_example_init">
+<parameters>
+<parameter id="ExampleInternals"/>
+<parameter id="ShowExampleScreens">
+<default_type>integer</default_type>
+<default_value>0</default_value>
+<description lang="en_US">A boolean that is used to enable/disable explanation screens in this example</description>
+<multivalue>false</multivalue>
+<sem_type>string</sem_type>
+<type_list>
+<item>integer</item>
+</type_list>
+<value_max>1</value_max>
+<value_min>0</value_min>
+</parameter>
+<parameter id="UsePretrainedModel"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_screen_introduction_part_1">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure displays an overview on the different example parts.</c>
+<c>* </c>
+<l>get_dict_tuple (ExampleInternals, 'show_example_screens', ShowExampleScreens)</l>
+<l>if (not ShowExampleScreens)</l>
+<l>    return ()</l>
+<l>endif</l>
+<c>* </c>
+<c>* Reset the open windows for a clean display.</c>
+<l>set_dict_tuple (ExampleInternals, 'window_images_needed', false)</l>
+<l>set_dict_tuple (ExampleInternals, 'window_legend_needed', false)</l>
+<l>dev_display_example_reset_windows (ExampleInternals)</l>
+<c>* </c>
+<c>* Display the overview on the different example parts.</c>
+<l>get_dict_tuple (ExampleInternals, 'window_text', WindowHandleText)</l>
+<l>dev_set_window (WindowHandleText)</l>
+<c></c>
+<l>Text := 'This example is part of a series of examples, which summarize '</l>
+<l>Text[|Text|] := 'the workflow for DL object detection. It uses the MVTec pill bag dataset.'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'The four parts are: '</l>
+<l>Text[|Text|] := '1. Creation of the model and dataset preprocessing.'</l>
+<l>Text[|Text|] := '2. Training of the model.'</l>
+<l>Text[|Text|] := '3. Evaluation of the trained model.'</l>
+<l>Text[|Text|] := '4. Inference on new images.'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'This example covers part 3: \'Evaluation of the trained model\'.'</l>
+<c>* </c>
+<c>* </c>
+<l>dev_disp_text (Text, 'window', 'top', 'left', 'black', 'box', 'true')</l>
+<l>dev_disp_text ('Press Run (F5) to continue', 'window', 'bottom', 'right', 'black', [], [])</l>
+<c>* </c>
+<l>return ()</l>
+</body>
+<docu id="dev_display_screen_introduction_part_1">
+<parameters>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_example_reset_windows">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure resets the graphics windows.</c>
+<c>* </c>
+<c>* Close any windows that are listed in key 'window_handles_to_close'.</c>
+<l>try</l>
+<l>    get_dict_tuple (ExampleInternals, 'window_handles_to_close', WindowHandlesToClose)</l>
+<l>catch (Exception)</l>
+<l>    WindowHandlesToClose := []</l>
+<l>endtry</l>
+<l>for I := 0 to |WindowHandlesToClose| - 1 by 1</l>
+<l>    dev_set_window (WindowHandlesToClose[I])</l>
+<l>    dev_close_window ()</l>
+<l>endfor</l>
+<l>set_dict_tuple (ExampleInternals, 'window_handles_to_close', [])</l>
+<c>* </c>
+<c>* Open image window if needed</c>
+<l>get_dict_param (ExampleInternals, 'keys', [], WindowHandleKeys)</l>
+<l>tuple_find (WindowHandleKeys, 'window_images', Index)</l>
+<l>get_dict_tuple (ExampleInternals, 'window_images_needed', WindowImagesNeeded)</l>
+<l>if (WindowImagesNeeded and Index == -1)</l>
+<c>    * Open new window for images</c>
+<l>    dev_open_example_image_window (ExampleInternals)</l>
+<l>elseif (not WindowImagesNeeded and Index != -1)</l>
+<c>    * Window for images exists but is not needed -&gt; close it</c>
+<l>    get_dict_tuple (ExampleInternals, 'window_images', WindowHandleImages)</l>
+<l>    dev_set_window (WindowHandleImages)</l>
+<l>    dev_close_window ()</l>
+<c>    * Delete key</c>
+<l>    remove_dict_key (ExampleInternals, 'window_images')</l>
+<l>endif</l>
+<c>* </c>
+<c>* Open legend window if needed</c>
+<l>get_dict_param (ExampleInternals, 'keys', [], WindowHandleKeys)</l>
+<l>tuple_find (WindowHandleKeys, 'window_legend', Index)</l>
+<l>get_dict_tuple (ExampleInternals, 'window_legend_needed', WindowLegendNeeded)</l>
+<l>if (WindowLegendNeeded and Index == -1)</l>
+<c>    * Open new window for legend</c>
+<l>    dev_open_example_legend_window (ExampleInternals, 280)</l>
+<l>elseif (not WindowLegendNeeded and Index != -1)</l>
+<c>    * Window for legend exists but is not needed -&gt; close it</c>
+<l>    get_dict_tuple (ExampleInternals, 'window_legend', WindowHandleLegend)</l>
+<l>    dev_set_window (WindowHandleLegend)</l>
+<l>    dev_close_window ()</l>
+<c>    * Delete key</c>
+<l>    remove_dict_key (ExampleInternals, 'window_legend')</l>
+<l>endif</l>
+<c>* </c>
+<l>get_dict_tuple (ExampleInternals, 'clear_windows', ClearWindows)</l>
+<l>ClearAllWindows := find(ClearWindows,'all')</l>
+<l>if (|ClearAllWindows| and ClearAllWindows &gt; -1)</l>
+<l>    ClearAllWindows := true</l>
+<l>else</l>
+<l>    ClearAllWindows := false</l>
+<l>endif</l>
+<c>* </c>
+<c>* Set the correct area (part) of the image window.</c>
+<l>try</l>
+<l>    get_dict_tuple (ExampleInternals, 'window_image', WindowHandleImages)</l>
+<l>    ClearImageWindow := find(ClearWindows,WindowHandleImages)</l>
+<l>    if (ClearAllWindows or (|ClearImageWindow| and ClearImageWindow &gt; -1))</l>
+<l>        dev_set_window (WindowHandleImages)</l>
+<l>        dev_clear_window ()</l>
+<l>        dev_set_part (1, 1, -1, -1)</l>
+<l>    endif</l>
+<l>catch (Exception)</l>
+<l>endtry</l>
+<c>* </c>
+<c>* Set the correct area (part) of the legend window.</c>
+<l>try</l>
+<l>    get_dict_tuple (ExampleInternals, 'window_legend', WindowHandleLegend)</l>
+<l>    ClearLegendWindow := find(ClearWindows,WindowHandleLegend)</l>
+<l>    if (ClearAllWindows or (|ClearLegendWindow| and ClearLegendWindow &gt; -1))</l>
+<l>        dev_set_window (WindowHandleLegend)</l>
+<l>        dev_clear_window ()</l>
+<l>        dev_set_part (1, 1, -1, -1)</l>
+<l>    endif</l>
+<l>catch (Exception)</l>
+<l>endtry</l>
+<c>* </c>
+<l>try</l>
+<l>    get_dict_tuple (ExampleInternals, 'window_text', WindowHandleText)</l>
+<l>    ClearTextWindow := find(ClearWindows,WindowHandleText)</l>
+<l>    if (ClearAllWindows or (|ClearTextWindow| and ClearTextWindow &gt; -1))</l>
+<l>        dev_set_window (WindowHandleText)</l>
+<l>        dev_clear_window ()</l>
+<l>    endif</l>
+<l>catch (Exception)</l>
+<l>endtry</l>
+<l>return ()</l>
+</body>
+<docu id="dev_display_example_reset_windows">
+<parameters>
+<parameter id="ExampleInternals">
+<default_type>integer</default_type>
+<mixed_type>false</mixed_type>
+<sem_type>dict</sem_type>
+<type_list>
+<item>integer</item>
+</type_list>
+</parameter>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_open_example_image_window">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure initializes the graphic windows that are used to display example images.</c>
+<c>* </c>
+<l>WindowWidthText := 800</l>
+<l>WindowHeightText := 300</l>
+<l>WindowWidthImage := 800</l>
+<l>WindowHeightImages := 500</l>
+<l>WindowBGColor := 'gray'</l>
+<c></c>
+<l>WindowYImages := WindowHeightText + 60</l>
+<l>WindowXImages := 0</l>
+<l>dev_open_window (WindowYImages, WindowXImages, WindowWidthImage, WindowHeightImages, WindowBGColor, WindowHandleImages)</l>
+<l>set_display_font (WindowHandleImages, 16, 'mono', 'true', 'false')</l>
+<l>set_dict_tuple (ExampleInternals, 'window_images', WindowHandleImages)</l>
+<l>set_dict_tuple (ExampleInternals, 'window_images_width', WindowWidthImage)</l>
+<l>set_dict_tuple (ExampleInternals, 'window_images_height', WindowHeightImages)</l>
+<l>set_dict_tuple (ExampleInternals, 'window_images_x', WindowXImages)</l>
+<l>set_dict_tuple (ExampleInternals, 'window_images_y', WindowYImages)</l>
+<l>return ()</l>
+</body>
+<docu id="dev_open_example_image_window">
+<parameters>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_screen_introduction_evaluation">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure explains the evaluation of an object detection model.</c>
+<c>* </c>
+<l>get_dict_tuple (ExampleInternals, 'show_example_screens', ShowExampleScreens)</l>
+<l>if (not ShowExampleScreens)</l>
+<l>    return ()</l>
+<l>endif</l>
+<c>* </c>
+<c>* Reset the open windows for a clean display.</c>
+<l>set_dict_tuple (ExampleInternals, 'window_images_needed', false)</l>
+<l>set_dict_tuple (ExampleInternals, 'window_legend_needed', false)</l>
+<l>dev_display_example_reset_windows (ExampleInternals)</l>
+<c>* </c>
+<c>* Display the overview on the different example parts.</c>
+<l>get_dict_tuple (ExampleInternals, 'window_text', WindowHandleText)</l>
+<l>dev_set_window (WindowHandleText)</l>
+<c>* </c>
+<l>Text := 'Evaluation of an Object Detection Model'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'For the evaluation of an object detection model on a dataset, we use'</l>
+<l>Text[|Text|] := 'the procedure \'evaluate_dl_model\'. This procedure is used during training'</l>
+<l>Text[|Text|] := 'to evaluate the current performance of the model on the validation data'</l>
+<l>Text[|Text|] := 'with respect to the measure \'mean_ap\'. After training the evaluation is'</l>
+<l>Text[|Text|] := 'useful to finetune the model parameters for non-maximum suppression'</l>
+<l>Text[|Text|] := '(\'min_confidence\', \'max_num_detections\', \'max_overlap\','</l>
+<l>Text[|Text|] := '\'max_overlap_class_agnostic\'), and to compare the performance of'</l>
+<l>Text[|Text|] := 'different models.'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'On the following screen we will explain the available measures.'</l>
+<c>* </c>
+<c>* </c>
+<l>dev_disp_text (Text, 'window', 'top', 'left', 'black', 'box', 'true')</l>
+<l>dev_disp_text ('Press Run (F5) to continue', 'window', 'bottom', 'right', 'black', [], [])</l>
+<c>* </c>
+<l>return ()</l>
+</body>
+<docu id="dev_display_screen_introduction_evaluation">
+<parameters>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_open_example_legend_window">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+<par name="WindowWidth" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure initializes the graphic windows that are used to display a legend.</c>
+<c>* </c>
+<l>get_dict_tuple (ExampleInternals, 'window_images_height', WindowImagesHeight)</l>
+<l>get_dict_tuple (ExampleInternals, 'window_images_width', WindowImagesWidth)</l>
+<l>get_dict_tuple (ExampleInternals, 'window_images_x', WindowImagesX)</l>
+<l>get_dict_tuple (ExampleInternals, 'window_images_y', WindowImagesY)</l>
+<l>dev_open_window (WindowImagesY, WindowImagesX + WindowImagesWidth + 5, WindowWidth, WindowImagesHeight, 'black', WindowHandleLegend)</l>
+<l>set_display_font (WindowHandleLegend, 14, 'mono', 'true', 'false')</l>
+<l>set_dict_tuple (ExampleInternals, 'window_legend', WindowHandleLegend)</l>
+<l>return ()</l>
+</body>
+<docu id="dev_open_example_legend_window">
+<parameters>
+<parameter id="ExampleInternals"/>
+<parameter id="WindowWidth"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_screen_run_program">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure shows a final text before starting with preprocessing.</c>
+<c>* </c>
+<l>get_dict_tuple (ExampleInternals, 'show_example_screens', ShowExampleScreens)</l>
+<l>if (not ShowExampleScreens)</l>
+<l>    return ()</l>
+<l>endif</l>
+<c>* </c>
+<c>* Reset the open windows for a clean display.</c>
+<l>set_dict_tuple (ExampleInternals, 'window_images_needed', false)</l>
+<l>set_dict_tuple (ExampleInternals, 'window_legend_needed', false)</l>
+<l>dev_display_example_reset_windows (ExampleInternals)</l>
+<c>* </c>
+<c>* Display the explanatory text.</c>
+<l>get_dict_tuple (ExampleInternals, 'window_text', WindowHandleText)</l>
+<l>dev_set_window (WindowHandleText)</l>
+<c>* </c>
+<l>get_dict_tuple (ExampleInternals, 'use_pretrained_model', UsePretrainedModel)</l>
+<l>if (UsePretrainedModel)</l>
+<l>    Text := 'We will now evaluate the retrained model shipped with HALCON.'</l>
+<l>else</l>
+<l>    Text := 'We will now evaluate the retrained model from example part 2'</l>
+<l>    Text[|Text|] := '\'detect_pills_deep_learning_2_train.hdev\'.'</l>
+<l>endif</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'First, we display a number of randomly selected detections.'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'Second, we will perform a detailed evaluation using'</l>
+<l>Text[|Text|] := '\'evaluate_dl_model\' and display the results.'</l>
+<c>* </c>
+<l>dev_disp_text (Text, 'window', 'top', 'left', 'black', 'box', 'true')</l>
+<l>dev_disp_text ('Press Run (F5) to continue', 'window', 'bottom', 'right', 'black', [], [])</l>
+<c>* </c>
+<l>return ()</l>
+</body>
+<docu id="dev_display_screen_run_program">
+<parameters>
+<parameter id="ExampleInternals">
+<default_type>integer</default_type>
+<mixed_type>false</mixed_type>
+<sem_type>dict</sem_type>
+<type_list>
+<item>integer</item>
+</type_list>
+</parameter>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_close_example_windows">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure closes all example windows.</c>
+<c>* </c>
+<l>get_dict_tuple (ExampleInternals, 'show_example_screens', ShowExampleScreens)</l>
+<l>if (not ShowExampleScreens)</l>
+<l>    return ()</l>
+<l>endif</l>
+<c>* </c>
+<l>get_dict_param (ExampleInternals, 'keys', [], Keys)</l>
+<l>for Index := 0 to |Keys| by 1</l>
+<l>    try</l>
+<l>        get_dict_tuple (ExampleInternals, Keys[Index], WindowHandle)</l>
+<l>        dev_set_window (WindowHandle)</l>
+<l>        dev_close_window ()</l>
+<l>    catch (Exception)</l>
+<l>    endtry</l>
+<l>endfor</l>
+<c>* </c>
+<l>return ()</l>
+</body>
+<docu id="dev_close_example_windows">
+<parameters>
+<parameter id="ExampleInternals">
+<default_type>integer</default_type>
+<mixed_type>false</mixed_type>
+<sem_type>dict</sem_type>
+<type_list>
+<item>integer</item>
+</type_list>
+</parameter>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_screen_introduction_part_2">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure displays a short introduction to this example.</c>
+<c>* </c>
+<l>get_dict_tuple (ExampleInternals, 'show_example_screens', ShowExampleScreens)</l>
+<l>if (not ShowExampleScreens)</l>
+<l>    return ()</l>
+<l>endif</l>
+<c>* </c>
+<c>* Check if all required files exist.</c>
+<l>get_dict_tuple (ExampleInternals, 'use_pretrained_model', UsePretrainedModel)</l>
+<l>ExampleDataDir := 'detect_pills_data'</l>
+<c>* </c>
+<c>* Path to finetuned model to evaluate.</c>
+<l>if (UsePretrainedModel)</l>
+<c>    * Use the pretrained model shipping with HALCON.</c>
+<l>    TrainedModelFileName := 'detect_pills.hdl'</l>
+<l>else</l>
+<c>    * File name of the finetuned object detection model.</c>
+<l>    TrainedModelFileName := ExampleDataDir + '/best_dl_model_detection.hdl'</l>
+<l>endif</l>
+<c>* </c>
+<c>* Path to DL dataset.</c>
+<l>DLDatasetFileName := ExampleDataDir + '/dldataset_pill_bag_512x320/dl_dataset.hdict'</l>
+<l>file_exists (ExampleDataDir, ExampleDataDirExists)</l>
+<l>file_exists (DLDatasetFileName, DatasetExists)</l>
+<l>file_exists (TrainedModelFileName, ModelExists)</l>
+<l>if (not ExampleDataDirExists or not DatasetExists or not ModelExists)</l>
+<c>    * Reset the open windows for a clean display.</c>
+<l>    set_dict_tuple (ExampleInternals, 'window_images_needed', false)</l>
+<l>    set_dict_tuple (ExampleInternals, 'window_legend_needed', false)</l>
+<l>    dev_display_example_reset_windows (ExampleInternals)</l>
+<c>    * </c>
+<l>    get_dict_tuple (ExampleInternals, 'window_text', WindowHandleText)</l>
+<l>    dev_set_window (WindowHandleText)</l>
+<c>    * </c>
+<l>    ExceptionText := 'To run this example you need the output of:'</l>
+<l>    NumMissing := 0</l>
+<l>    MissingInstaller := false</l>
+<l>    if (not ExampleDataDirExists or not DatasetExists)</l>
+<l>        ExceptionText[|ExceptionText|] := ' - \'detect_pills_deep_learning_1_prepare.hdev\''</l>
+<l>        NumMissing := NumMissing + 1</l>
+<l>    endif</l>
+<l>    if (not ModelExists)</l>
+<l>        if (not UsePretrainedModel)</l>
+<l>            ExceptionText[|ExceptionText|] := ' - \'detect_pills_deep_learning_2_train.hdev\''</l>
+<l>            NumMissing := NumMissing + 1</l>
+<l>        else</l>
+<l>            ExceptionText[|ExceptionText|] := ' - Deep learning installer, see Installation Guide.'</l>
+<l>            MissingInstaller := true</l>
+<l>        endif</l>
+<l>    endif</l>
+<l>    ExceptionText[|ExceptionText|] := ''</l>
+<l>    if (not MissingInstaller)</l>
+<l>        if (NumMissing == 1)</l>
+<l>            ExceptionText[|ExceptionText|] := 'Please run this example first.'</l>
+<l>        else</l>
+<l>            ExceptionText[|ExceptionText|] := 'Please run these examples first.'</l>
+<l>        endif</l>
+<l>        if (not ModelExists)</l>
+<l>            ExceptionText[|ExceptionText|:|ExceptionText| + 2] := ['Alternatively, you can set \'UsePretrainedModel := true\' ', 'at the top of the example script to use an already trained', 'model shipped with the HALCON installation.']</l>
+<l>        endif</l>
+<l>    endif</l>
+<c>    * Display warning.</c>
+<l>    set_display_font (WindowHandleText, 20, 'mono', 'true', 'false')</l>
+<l>    dev_disp_text (ExceptionText, 'window', 'top', 'left', 'red', 'box', 'true')</l>
+<l>    set_display_font (WindowHandleText, 16, 'mono', 'true', 'false')</l>
+<l>    return ()</l>
+<l>endif</l>
+<c>* </c>
+<c>* Reset the open windows for a clean display.</c>
+<l>set_dict_tuple (ExampleInternals, 'window_images_needed', false)</l>
+<l>set_dict_tuple (ExampleInternals, 'window_legend_needed', false)</l>
+<l>dev_display_example_reset_windows (ExampleInternals)</l>
+<c>* </c>
+<c>* Display explanatory text.</c>
+<l>get_dict_tuple (ExampleInternals, 'window_text', WindowHandleText)</l>
+<l>dev_set_window (WindowHandleText)</l>
+<c>* </c>
+<l>Text := 'Evaluation of the Trained Model'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'We will explain how to evaluate an object detection model and the most'</l>
+<l>Text[|Text|] := 'important aspects thereof.'</l>
+<l>Text[|Text|] := ''</l>
+<c>* </c>
+<l>dev_disp_text (Text, 'window', 'top', 'left', 'black', 'box', 'true')</l>
+<l>dev_disp_text ('Press Run (F5) to continue', 'window', 'bottom', 'right', 'black', 'box', 'true')</l>
+<l>return ()</l>
+</body>
+<docu id="dev_display_screen_introduction_part_2">
+<parameters>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_screen_explain_measures">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure explains the parameter 'measure' of the procedure 'evaluate_dl_model'.</c>
+<c>* </c>
+<l>get_dict_tuple (ExampleInternals, 'show_example_screens', ShowExampleScreens)</l>
+<l>if (not ShowExampleScreens)</l>
+<l>    return ()</l>
+<l>endif</l>
+<c>* </c>
+<c>* Reset the open windows for a clean display.</c>
+<l>set_dict_tuple (ExampleInternals, 'window_images_needed', false)</l>
+<l>set_dict_tuple (ExampleInternals, 'window_legend_needed', false)</l>
+<l>dev_display_example_reset_windows (ExampleInternals)</l>
+<c>* </c>
+<c>* Display the overview on the different example parts.</c>
+<l>get_dict_tuple (ExampleInternals, 'window_text', WindowHandleText)</l>
+<l>dev_set_window (WindowHandleText)</l>
+<c>* </c>
+<l>Text := 'Evaluation Measures'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := '\'evaluate_dl_model\' evaluates the performance of a model with respect to'</l>
+<l>Text[|Text|] := 'one or more measures. In the case of object detection the mean average'</l>
+<l>Text[|Text|] := 'precision, the \'mean_ap\', is used.'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'The \'mean_ap\' is useful to summarize the performance of the detection'</l>
+<l>Text[|Text|] := 'model, e.g., during training or for a high-level comparison of different'</l>
+<l>Text[|Text|] := 'models. It is selected via the parameter \'measures\'.'</l>
+<c>* </c>
+<c>* </c>
+<l>dev_disp_text (Text, 'window', 'top', 'left', 'black', 'box', 'true')</l>
+<l>dev_disp_text ('Press Run (F5) to continue', 'window', 'bottom', 'right', 'black', [], [])</l>
+<c>* </c>
+<l>return ()</l>
+</body>
+<docu id="dev_display_screen_explain_measures">
+<parameters>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_screen_explain_detection_scenarios_part_1">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure displays the explanation of detection scenarios.</c>
+<c>* </c>
+<c>* Explanatory text</c>
+<l>Text := 'Detailed Evaluation'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'If \'evaluate_dl_model\' is called with \'detailed_evaluation\' enabled,'</l>
+<l>Text[|Text|] := 'the detections for each class are analyzed in detail in addition to the'</l>
+<l>Text[|Text|] := 'specified measures.'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'We will explain the meaning of true positives, false positives, and false'</l>
+<l>Text[|Text|] := 'negatives in the context of object detection with the help of the example'</l>
+<l>Text[|Text|] := 'below. Note, that ground truth objects are displayed with transparent'</l>
+<l>Text[|Text|] := 'rectangles, and predictions with their bounding boxes. This example is'</l>
+<l>Text[|Text|] := 'artificially created to demonstrate all possible detection scenarios.'</l>
+<c>* </c>
+<c>* Detection type</c>
+<l>DetectionValue := 'all'</l>
+<l>DetectionKey := 'bbox_detection_type'</l>
+<l>TitleImage := 'Output of \'apply_dl_model\''</l>
+<c>* </c>
+<c>* Display text and results</c>
+<l>dev_display_screen_explain_detection_scenarios_common (ExampleInternals, Text, TitleImage, DetectionKey, DetectionValue)</l>
+<l>return ()</l>
+</body>
+<docu id="dev_display_screen_explain_detection_scenarios_part_1">
+<parameters>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="create_tiny_example_dataset_with_result">
+<interface>
+<oc>
+<par name="DLDataset" base_type="ctrl" dimension="0"/>
+<par name="DLResult" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<c>* This procedure creates a tiny dataset out of the pill bag dataset.</c>
+<c>* </c>
+<l>get_system ('example_dir', ExampleDir)</l>
+<c>* Create DLDataset</c>
+<l>create_dict (DLDataset)</l>
+<l>set_dict_tuple (DLDataset, 'image_dir', ExampleDir + '/images')</l>
+<l>set_dict_tuple (DLDataset, 'class_ids', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])</l>
+<l>set_dict_tuple (DLDataset, 'class_names', ['Omega-3', 'KMW', 'Stomach tablet', 'Ginko', 'Ginseng', 'Glucosamin', 'Cognivia', 'Capsularum I', 'Iron tablet', 'Vitamin-B'])</l>
+<c>* Create Samples</c>
+<l>DLSamples := []</l>
+<l>create_dict (DLSample)</l>
+<l>set_dict_tuple (DLSample, 'image_id', 36)</l>
+<l>set_dict_tuple (DLSample, 'image_file_name', 'pill_bag/pill_bag_036.png')</l>
+<l>set_dict_tuple (DLSample, 'bbox_row1', [177, 242, 247, 240, 453, 127, 465, 372])</l>
+<l>set_dict_tuple (DLSample, 'bbox_col1', [692, 362, 455, 894, 436, 915, 826, 535])</l>
+<l>set_dict_tuple (DLSample, 'bbox_row2', [287, 376, 458, 322, 554, 244, 561, 456])</l>
+<l>set_dict_tuple (DLSample, 'bbox_col2', [933, 493, 580, 978, 672, 1033, 1037, 618])</l>
+<l>set_dict_tuple (DLSample, 'bbox_label_id', [1, 3, 4, 5, 6, 7, 8, 9])</l>
+<l>DLSamples := [DLSamples,DLSample]</l>
+<c>* </c>
+<l>set_dict_tuple (DLDataset, 'samples', DLSamples)</l>
+<c>* </c>
+<c>* Create a fake result</c>
+<l>create_dict (DLResult)</l>
+<l>set_dict_tuple (DLResult, 'bbox_row1', [183, 245, 240, 241, 445, 120, 372, 619, 116, 461, 253, 139])</l>
+<l>set_dict_tuple (DLResult, 'bbox_col1', [692, 368, 461, 892, 434, 919, 534, 765, 648, 448, 368, 977])</l>
+<l>set_dict_tuple (DLResult, 'bbox_row2', [287, 380, 451, 305, 554, 241, 452, 723, 216, 569, 394, 177])</l>
+<l>set_dict_tuple (DLResult, 'bbox_col2', [940, 491, 581, 968, 675, 1023, 621, 1005, 898, 669, 498, 1010])</l>
+<l>set_dict_tuple (DLResult, 'bbox_class_id', [1, 3, 4, 9, 6, 7, 9, 6, 1, 1, 3, 9])</l>
+<l>set_dict_tuple (DLResult, 'bbox_confidence', [0.99871, 1.0, 0.71677, 0.97492, 0.96392, 0.81231, 0.99123, 0.61978, 0.65315, 0.70765, 0.63381, 0.7241])</l>
+<c>* </c>
+<c>* For easy retrieval we store the type of detections</c>
+<l>set_dict_tuple (DLResult, 'bbox_detection_type', ['tp', 'tp', 'tp', 'fp_class', 'tp', 'tp', 'tp', 'fp_bg', 'fp_loc', 'fp_class', 'fp_dup', 'fp_mult'])</l>
+<l>return ()</l>
+<l>return ()</l>
+</body>
+<docu id="create_tiny_example_dataset_with_result">
+<parameters>
+<parameter id="DLDataset"/>
+<parameter id="DLResult"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_screen_explain_detection_scenarios_part_2">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure displays the explanation of detection scenarios.</c>
+<c>* </c>
+<c>* Explanatory text</c>
+<l>Text := 'True Positive Detection (TP)'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'A true positive is a detection where the IoU of the predicted rectangle'</l>
+<l>Text[|Text|] := 'and the ground truth rectangle is larger than the required minimum IoU'</l>
+<l>Text[|Text|] := 'and the predicted class is correct.'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'Below we see all true positive detections.'</l>
+<c>* </c>
+<c>* Detection type</c>
+<l>DetectionValue := 'tp'</l>
+<l>DetectionKey := 'bbox_detection_type'</l>
+<l>TitleImage := 'True Positives (TP)'</l>
+<c>* </c>
+<c>* Display text and results</c>
+<l>get_dict_tuple (ExampleInternals, 'window_text', WindowHandleText)</l>
+<l>set_dict_tuple (ExampleInternals, 'clear_windows', WindowHandleText)</l>
+<l>dev_display_screen_explain_detection_scenarios_common (ExampleInternals, Text, TitleImage, DetectionKey, DetectionValue)</l>
+<l>return ()</l>
+</body>
+<docu id="dev_display_screen_explain_detection_scenarios_part_2">
+<parameters>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="select_dl_results">
+<interface>
+<ic>
+<par name="Dict" base_type="ctrl" dimension="0"/>
+<par name="Keys" base_type="ctrl" dimension="0"/>
+<par name="Values" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="DictOut" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<c>* This procedure allows to retrieve entries of a dict, where</c>
+<c>* a number keys matches specific values.</c>
+<c>* </c>
+<c>* Check supported key types.</c>
+<l>get_dict_param (Dict, 'key_data_type', Keys, KeyType)</l>
+<l>if (KeyType != gen_tuple_const(|Keys|,'tuple'))</l>
+<l>    throw ('Only \'tuple\' type keys are supported.')</l>
+<l>endif</l>
+<c>* </c>
+<c>* Create a copy of the dict containing only the entries that</c>
+<c>* match a the value.</c>
+<c>* </c>
+<c>* Select all entries that match one or more key-value pairs</c>
+<l>get_dict_tuple (Dict, Keys[0], ValuesKey)</l>
+<l>NumValues := |ValuesKey|</l>
+<l>SelectedIndices := []</l>
+<l>for Index := 0 to |Keys| - 1 by 1</l>
+<l>    get_dict_tuple (Dict, Keys[Index], ValuesKey)</l>
+<l>    if (|ValuesKey| == NumValues)</l>
+<l>        SelectedIndices := [SelectedIndices,find(ValuesKey,Values[Index])]</l>
+<l>    else</l>
+<l>        throw ('All keys should contain the same number of values or one value.')</l>
+<l>    endif</l>
+<l>endfor</l>
+<l>SelectedIndices := uniq(SelectedIndices)</l>
+<c>* </c>
+<l>get_dict_param (Dict, 'keys', [], DictKeys)</l>
+<l>get_dict_param (Dict, 'key_data_type', DictKeys, DictDataTypes)</l>
+<l>create_dict (DictOut)</l>
+<l>for Index := 0 to |DictKeys| - 1 by 1</l>
+<l>    if (DictDataTypes[Index] == 'tuple')</l>
+<l>        get_dict_tuple (Dict, DictKeys[Index], Tuple)</l>
+<l>        if (|Tuple| == NumValues)</l>
+<l>            if (|SelectedIndices| &gt; 0 and SelectedIndices != -1)</l>
+<l>                set_dict_tuple (DictOut, DictKeys[Index], Tuple[SelectedIndices])</l>
+<l>            else</l>
+<l>                set_dict_tuple (DictOut, DictKeys[Index], [])</l>
+<l>            endif</l>
+<l>        else</l>
+<l>            throw ('All keys should contain the same number of values or one value.')</l>
+<l>        endif</l>
+<l>    else</l>
+<l>        throw ('Only \'tuple\' data type is supported.')</l>
+<l>    endif</l>
+<l>endfor</l>
+<l>return ()</l>
+</body>
+<docu id="select_dl_results">
+<short lang="en_US">Retrieve all entries of a dict Dict where Key matches Value and return the result as new dict DictOut .</short>
+<parameters>
+<parameter id="Dict"/>
+<parameter id="DictOut"/>
+<parameter id="Keys"/>
+<parameter id="Values"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_screen_explain_detection_scenarios_part_3">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure displays the explanation of detection scenarios.</c>
+<c>* </c>
+<c>* Explanatory text.</c>
+<l>Text := 'False Positive on Background (FP bg)'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'A false positive is considered to be on the background if the IoU of'</l>
+<l>Text[|Text|] := 'the predicted rectangle with all ground truth rectangles is zero,'</l>
+<l>Text[|Text|] := 'i.e., it has no overlap with any of the ground truth boxes.'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'Below we see all false positive background detections.'</l>
+<c>* </c>
+<c>* Detection type</c>
+<l>DetectionValue := 'fp_bg'</l>
+<l>DetectionKey := 'bbox_detection_type'</l>
+<l>TitleImage := 'False Positives on Background (FP bg)'</l>
+<c>* </c>
+<c>* Display text and results</c>
+<l>dev_display_screen_explain_detection_scenarios_common (ExampleInternals, Text, TitleImage, DetectionKey, DetectionValue)</l>
+<l>return ()</l>
+</body>
+<docu id="dev_display_screen_explain_detection_scenarios_part_3">
+<parameters>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_screen_explain_detection_scenarios_common">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+<par name="Text" base_type="ctrl" dimension="0"/>
+<par name="TitleImage" base_type="ctrl" dimension="0"/>
+<par name="DetectionKey" base_type="ctrl" dimension="0"/>
+<par name="DetectionValue" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<l>get_dict_tuple (ExampleInternals, 'show_example_screens', ShowExampleScreens)</l>
+<l>if (not ShowExampleScreens)</l>
+<l>    return ()</l>
+<l>endif</l>
+<c>* </c>
+<c>* Reset the open windows for a clean display.</c>
+<l>set_dict_tuple (ExampleInternals, 'window_images_needed', true)</l>
+<l>set_dict_tuple (ExampleInternals, 'window_legend_needed', true)</l>
+<l>dev_display_example_reset_windows (ExampleInternals)</l>
+<c>* </c>
+<c>* Display explanatory text.</c>
+<l>get_dict_tuple (ExampleInternals, 'window_text', WindowHandleText)</l>
+<l>dev_set_window (WindowHandleText)</l>
+<l>dev_disp_text (Text, 'window', 'top', 'left', 'black', 'box', 'true')</l>
+<l>dev_disp_text ('Press Run (F5) to continue', 'window', 'bottom', 'right', 'black', [], [])</l>
+<c>* </c>
+<c>* Display example images,</c>
+<l>get_dict_tuple (ExampleInternals, 'window_images', WindowHandleImages)</l>
+<c>* </c>
+<c>* Display a temporary legend.</c>
+<l>get_dict_tuple (ExampleInternals, 'window_legend', WindowHandleLegend)</l>
+<c>* </c>
+<l>create_dict (WindowHandleDict)</l>
+<l>get_dict_param (ExampleInternals, 'keys', [], GenParamValue)</l>
+<c>* To display the Text at the bottom of the image such that the image is undistorted,</c>
+<c>* change size of windows.</c>
+<l>get_dict_tuple (ExampleInternals, 'window_images_x', WindowImageColumn1)</l>
+<l>get_dict_tuple (ExampleInternals, 'window_images_y', WindowImageRow1)</l>
+<l>get_dict_tuple (ExampleInternals, 'window_images_width', WindowImageWidth)</l>
+<l>get_dict_tuple (ExampleInternals, 'window_images_height', WindowImageHeight)</l>
+<l>WindowImageHeight := WindowImageHeight + 39.88</l>
+<l>dev_set_window (WindowHandleImages)</l>
+<l>dev_set_window_extents (WindowImageRow1, WindowImageColumn1, WindowImageWidth, WindowImageHeight)</l>
+<c>* Same for legend window</c>
+<l>get_window_extents (WindowHandleLegend, Row, Column, Width, Height)</l>
+<l>dev_set_window (WindowHandleLegend)</l>
+<l>dev_set_window_extents (WindowImageRow1, WindowImageColumn1 + WindowImageWidth + 5, 290, WindowImageHeight)</l>
+<l>dev_set_window (WindowHandleImages)</l>
+<c>* </c>
+<l>set_dict_tuple (WindowHandleDict, 'bbox_both', [WindowHandleImages,WindowHandleLegend])</l>
+<c>* </c>
+<c>* Display the sample contained in tiny dataset.</c>
+<l>get_dict_tuple (ExampleInternals, 'example_dl_dataset', DLDataset)</l>
+<l>get_dict_tuple (ExampleInternals, 'example_dl_result', DLResult)</l>
+<c>* </c>
+<l>gen_dl_samples (DLDataset, 0, 'detection', [], DLSample)</l>
+<l>if (DetectionKey == 'bbox_detection_type' and DetectionValue == 'all')</l>
+<l>    DLResultSelected := DLResult</l>
+<l>else</l>
+<l>    select_dl_results (DLResult, DetectionKey, DetectionValue, DLResultSelected)</l>
+<l>endif</l>
+<l>create_dict (GenParam)</l>
+<l>set_dict_tuple (GenParam, 'bbox_display_confidence', false)</l>
+<l>dev_display_dl_data (DLSample, DLResultSelected, DLDataset, 'bbox_both', GenParam, WindowHandleDict)</l>
+<c>* </c>
+<l>dev_set_window (WindowHandleImages)</l>
+<l>dev_disp_text (TitleImage, 'window', 'top', 'left', 'black', [], [])</l>
+<l>dev_set_window (WindowHandleText)</l>
+<l>dev_disp_text ('Press Run (F5) to continue', 'window', 'bottom', 'right', 'black', [], [])</l>
+<l>dev_set_window (WindowHandleLegend)</l>
+<l>dev_disp_text ('Press Run (F5) to continue', 'window', 'bottom', 'right', 'black', [], [])</l>
+<l>return ()</l>
+</body>
+<docu id="dev_display_screen_explain_detection_scenarios_common">
+<parameters>
+<parameter id="DetectionKey"/>
+<parameter id="DetectionValue"/>
+<parameter id="ExampleInternals"/>
+<parameter id="Text"/>
+<parameter id="TitleImage"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_screen_explain_detection_scenarios_part_4">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure displays the explanation of detection scenarios.</c>
+<c>* </c>
+<c>* Explanatory text.</c>
+<l>Text := 'False Positives due to Misclassification (FP class)'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'A detection is considered as misclassified if the IoU of the'</l>
+<l>Text[|Text|] := 'predicted rectangle is larger than the required minimum IoU of'</l>
+<l>Text[|Text|] := 'a ground truth box but the predicted class is wrong.'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'Below we see all false positive misclassified detections.'</l>
+<c>* </c>
+<c>* Detection type</c>
+<l>DetectionValue := 'fp_class'</l>
+<l>DetectionKey := 'bbox_detection_type'</l>
+<l>TitleImage := 'False Positives due to Misclassification (FP class)'</l>
+<c>* </c>
+<c>* Display text and results</c>
+<l>dev_display_screen_explain_detection_scenarios_common (ExampleInternals, Text, TitleImage, DetectionKey, DetectionValue)</l>
+<l>return ()</l>
+</body>
+<docu id="dev_display_screen_explain_detection_scenarios_part_4">
+<parameters>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_screen_explain_detection_scenarios_part_5">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure displays the first part of the explanation of true positive detections.</c>
+<c>* </c>
+<c>* Explanatory text.</c>
+<l>Text := 'False Positive due to Wrong Location (FP loc)'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'A location of a prediction is considered to be wrong if the IoU is'</l>
+<l>Text[|Text|] := 'non-zero and below the minimum IoU, and the predicted class matches'</l>
+<l>Text[|Text|] := 'the ground truth.'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'Below we see all false positive detections with a wrong location.'</l>
+<c>* </c>
+<c>* Detection type</c>
+<l>DetectionValue := 'fp_loc'</l>
+<l>DetectionKey := 'bbox_detection_type'</l>
+<l>TitleImage := 'False Positive due to Wrong Location (FP loc)'</l>
+<c>* </c>
+<c>* Display text and results</c>
+<l>dev_display_screen_explain_detection_scenarios_common (ExampleInternals, Text, TitleImage, DetectionKey, DetectionValue)</l>
+<l>return ()</l>
+</body>
+<docu id="dev_display_screen_explain_detection_scenarios_part_5">
+<parameters>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_screen_explain_detection_scenarios_part_6">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure displays the explanation of detection scenarios.</c>
+<c>* </c>
+<c>* Explanatory text.</c>
+<l>Text := 'False Positive due to Duplicate Detections (FP dup)'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'A false positive is considered to be a duplicate if the IoU is higher than'</l>
+<l>Text[|Text|] := 'the minimum IoU but there exists another detection of the same class'</l>
+<l>Text[|Text|] := 'which has a higher score.'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'Below we see all false positive duplicate detections.'</l>
+<c>* </c>
+<c>* Detection type</c>
+<l>DetectionValue := ['fp_dup', 3]</l>
+<l>DetectionKey := ['bbox_detection_type', 'bbox_class_id']</l>
+<l>TitleImage := 'False Positive due to Duplicate Detections (FP dup)'</l>
+<c>* </c>
+<c>* Display text and results</c>
+<l>dev_display_screen_explain_detection_scenarios_common (ExampleInternals, Text, TitleImage, DetectionKey, DetectionValue)</l>
+<l>return ()</l>
+</body>
+<docu id="dev_display_screen_explain_detection_scenarios_part_6">
+<parameters>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_screen_explain_detection_scenarios_part_7">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure displays the explanation of detection scenarios.</c>
+<c>* </c>
+<c>* Explanatory text.</c>
+<l>Text := 'False Positive due to Location and Class (FP mult)'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'A false positive can also occur due to multiple reasons. In this case'</l>
+<l>Text[|Text|] := 'the IoU is smaller than the required minimum IoU, i.e., the location'</l>
+<l>Text[|Text|] := 'is wrong, and at the same time the predicted class is wrong.'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'Below we see all false positives of this kind.'</l>
+<c>* </c>
+<c>* Detection type</c>
+<l>DetectionValue := 'fp_mult'</l>
+<l>DetectionKey := 'bbox_detection_type'</l>
+<l>TitleImage := 'False Positive due to Location and Class (FP mult)'</l>
+<c>* </c>
+<c>* Display text and results</c>
+<l>dev_display_screen_explain_detection_scenarios_common (ExampleInternals, Text, TitleImage, DetectionKey, DetectionValue)</l>
+<l>return ()</l>
+</body>
+<docu id="dev_display_screen_explain_detection_scenarios_part_7">
+<parameters>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_screen_explain_detection_scenarios_part_8">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure displays the explanation of detection scenarios.</c>
+<c>* </c>
+<c>* Explanatory text.</c>
+<l>Text := 'False Negative'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'A false negative occurs, if there is no true positive detection for'</l>
+<l>Text[|Text|] := 'a given ground truth object.'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'Below, we have false negatives for the classes with \'class_id\' = 5'</l>
+<l>Text[|Text|] := 'and \'class_id\' = 8, as there are ground truth objects for these'</l>
+<l>Text[|Text|] := 'classes, but no true positive predictions.'</l>
+<c>* </c>
+<c>* Detection type</c>
+<l>DetectionValue := 'all'</l>
+<l>DetectionKey := 'bbox_detection_type'</l>
+<l>TitleImage := 'False Negative (FN)'</l>
+<c>* </c>
+<c>* Display text and results</c>
+<l>dev_display_screen_explain_detection_scenarios_common (ExampleInternals, Text, TitleImage, DetectionKey, DetectionValue)</l>
+<l>return ()</l>
+</body>
+<docu id="dev_display_screen_explain_detection_scenarios_part_8">
+<parameters>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_screen_explain_max_num_detections">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure displays an explanation of the parameter 'max_num_detections'.</c>
+<c>* </c>
+<l>get_dict_tuple (ExampleInternals, 'show_example_screens', ShowExampleScreens)</l>
+<l>if (not ShowExampleScreens)</l>
+<l>    return ()</l>
+<l>endif</l>
+<c>* </c>
+<c>* Reset the open windows for a clean display.</c>
+<l>set_dict_tuple (ExampleInternals, 'window_images_needed', false)</l>
+<l>set_dict_tuple (ExampleInternals, 'window_legend_needed', false)</l>
+<l>dev_display_example_reset_windows (ExampleInternals)</l>
+<c>* </c>
+<c>* Display the overview on the different example parts.</c>
+<l>get_dict_tuple (ExampleInternals, 'window_text', WindowHandleText)</l>
+<l>dev_set_window (WindowHandleText)</l>
+<c>* </c>
+<l>Text := 'Parameter \'max_num_detections\''</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'This parameter allows to restrict the number of results considered during'</l>
+<l>Text[|Text|] := 'evaluation. Starting from the result with the highest confidence only'</l>
+<l>Text[|Text|] := '\'max_num_detections\' results per class are considered.'</l>
+<c>* </c>
+<l>dev_disp_text (Text, 'window', 'top', 'left', 'black', 'box', 'true')</l>
+<l>dev_disp_text ('Press Run (F5) to continue', 'window', 'bottom', 'right', 'black', [], [])</l>
+<c>* </c>
+<l>return ()</l>
+</body>
+<docu id="dev_display_screen_explain_max_num_detections">
+<parameters>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_screen_explain_area_ranges">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure displays an explanation of the parameter \'area_ranges\'.</c>
+<c>* </c>
+<l>get_dict_tuple (ExampleInternals, 'show_example_screens', ShowExampleScreens)</l>
+<l>if (not ShowExampleScreens)</l>
+<l>    return ()</l>
+<l>endif</l>
+<c>* </c>
+<c>* Reset the open windows for a clean display.</c>
+<l>set_dict_tuple (ExampleInternals, 'window_images_needed', false)</l>
+<l>set_dict_tuple (ExampleInternals, 'window_legend_needed', false)</l>
+<l>dev_display_example_reset_windows (ExampleInternals)</l>
+<c>* </c>
+<c>* Display the overview on the different example parts.</c>
+<l>get_dict_tuple (ExampleInternals, 'window_text', WindowHandleText)</l>
+<l>dev_set_window (WindowHandleText)</l>
+<c>* </c>
+<l>Text := 'Parameter \'area_ranges\''</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'This parameter allows to evaluate specific area ranges separately.'</l>
+<l>Text[|Text|] := 'It is useful if you have objects of very different sizes and'</l>
+<l>Text[|Text|] := 'want to evaluate the performance of the model for the different'</l>
+<l>Text[|Text|] := 'sizes separately.'</l>
+<c>* </c>
+<c>* </c>
+<l>dev_disp_text (Text, 'window', 'top', 'left', 'black', 'box', 'true')</l>
+<l>dev_disp_text ('Press Run (F5) to continue', 'window', 'bottom', 'right', 'black', [], [])</l>
+<c>* </c>
+<l>return ()</l>
+</body>
+<docu id="dev_display_screen_explain_area_ranges">
+<parameters>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_screen_explain_iou_threshold">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure displays an explanation of the parameter 'iou_threshold'.</c>
+<c>* </c>
+<l>get_dict_tuple (ExampleInternals, 'show_example_screens', ShowExampleScreens)</l>
+<l>if (not ShowExampleScreens)</l>
+<l>    return ()</l>
+<l>endif</l>
+<c>* </c>
+<c>* Reset the open windows for a clean display.</c>
+<l>set_dict_tuple (ExampleInternals, 'window_images_needed', true)</l>
+<l>set_dict_tuple (ExampleInternals, 'window_legend_needed', true)</l>
+<l>dev_display_example_reset_windows (ExampleInternals)</l>
+<c>* </c>
+<l>get_dict_tuple (ExampleInternals, 'window_text_height', TextWindowHeight)</l>
+<l>get_dict_tuple (ExampleInternals, 'window_text_width', TextWindowWidth)</l>
+<l>Height := TextWindowHeight + 20</l>
+<c>* </c>
+<c>* Display example IoU values.</c>
+<l>get_dict_tuple (ExampleInternals, 'window_images', WindowHandleImages)</l>
+<l>dev_set_window (WindowHandleImages)</l>
+<l>dev_set_window_extents (TextWindowHeight + 55, 0, TextWindowWidth, Height)</l>
+<l>dev_clear_window ()</l>
+<l>gen_image_const (Background, 'byte', TextWindowWidth, Height)</l>
+<l>paint_region (Background, Background, Background, 255, 'fill')</l>
+<l>dev_display (Background)</l>
+<l>dev_set_draw ('margin')</l>
+<l>dev_set_line_width (3)</l>
+<l>ColorGT := '#ff781aff'</l>
+<l>ColorPrediction := '#48c2ffff'</l>
+<c>* </c>
+<l>gen_empty_obj (RectanglesGT)</l>
+<l>gen_rectangle1 (RectangleGT, 25, 570, 100, 735)</l>
+<l>concat_obj (RectanglesGT, RectangleGT, RectanglesGT)</l>
+<l>gen_rectangle1 (RectangleGT, 180, 60, 255, 225)</l>
+<l>concat_obj (RectanglesGT, RectangleGT, RectanglesGT)</l>
+<l>gen_rectangle1 (RectangleGT, 100, 300, 175, 465)</l>
+<l>concat_obj (RectanglesGT, RectangleGT, RectanglesGT)</l>
+<c>* </c>
+<l>gen_empty_obj (RectanglesPrediction)</l>
+<l>gen_rectangle1 (RectanglePrediction, 20, 565, 105, 730)</l>
+<l>concat_obj (RectanglesPrediction, RectanglePrediction, RectanglesPrediction)</l>
+<l>gen_rectangle1 (RectanglePrediction, 220, 30, 300, 190)</l>
+<l>concat_obj (RectanglesPrediction, RectanglePrediction, RectanglesPrediction)</l>
+<l>gen_rectangle1 (RectanglePrediction, 80, 315, 160, 480)</l>
+<l>concat_obj (RectanglesPrediction, RectanglePrediction, RectanglesPrediction)</l>
+<c>* </c>
+<l>count_obj (RectanglesPrediction, NumRectangles)</l>
+<l>for RectangleIndex := 1 to NumRectangles by 1</l>
+<l>    select_obj (RectanglesGT, RectangleGT, RectangleIndex)</l>
+<l>    select_obj (RectanglesPrediction, RectanglePrediction, RectangleIndex)</l>
+<l>    dev_set_color (ColorGT)</l>
+<l>    dev_display (RectangleGT)</l>
+<l>    dev_set_color (ColorPrediction)</l>
+<l>    dev_display (RectanglePrediction)</l>
+<l>    intersection (RectangleGT, RectanglePrediction, Intersection)</l>
+<l>    union2 (RectangleGT, RectanglePrediction, Union)</l>
+<l>    area_center (Union, AreaUnion, _, _)</l>
+<l>    area_center (Intersection, AreaIntersection, Row, Column)</l>
+<l>    IoU := AreaIntersection / real(AreaUnion)</l>
+<l>    IoUString := 'IoU = ' + IoU$'.2f'</l>
+<l>    get_string_extents (WindowHandleImages, IoUString, Ascent, Descent, IoUStringWidth, IoUStringHeight)</l>
+<l>    dev_disp_text (IoUString, 'image', Row - IoUStringHeight, Column - IoUStringWidth / 2, 'black', [], [])</l>
+<l>endfor</l>
+<l>dev_disp_text ('Example IoU values', 'window', 'top', 'left', 'black', [], [])</l>
+<c>* </c>
+<c>* Display graphical IoU formula.</c>
+<l>get_dict_tuple (ExampleInternals, 'window_legend', WindowHandleLegend)</l>
+<l>dev_set_window (WindowHandleLegend)</l>
+<l>get_dict_tuple (ExampleInternals, 'window_text_height', TextWindowHeight)</l>
+<l>Height := TextWindowHeight + 20</l>
+<l>read_image (IoUImage, 'dl_explanation/evaluation_det_iou')</l>
+<l>get_image_size (IoUImage, IoUWidth, IoUHeight)</l>
+<l>gen_image_const (ImageBottom, 'byte', IoUWidth, Height - IoUHeight)</l>
+<l>paint_region (ImageBottom, ImageBottom, ImageBottom, 255, 'fill')</l>
+<l>compose3 (ImageBottom, ImageBottom, ImageBottom, ImageBottom)</l>
+<l>concat_obj (IoUImage, ImageBottom, Images)</l>
+<l>Crop := [-1, -1]</l>
+<l>tile_images_offset (Images, TiledImage, [0,IoUHeight], [0, 0], Crop, Crop, Crop, Crop, IoUWidth, Height)</l>
+<l>dev_set_window_extents (TextWindowHeight + 55, TextWindowWidth + 6, IoUWidth, Height)</l>
+<l>dev_set_part (0, 0, Height - 1, IoUWidth - 1)</l>
+<l>dev_display (TiledImage)</l>
+<l>TextIoU := 'Intersection over union (IoU)'</l>
+<l>TextIoU[|TextIoU|] := 'ground truth'</l>
+<l>TextIoU[|TextIoU|] := 'prediction'</l>
+<l>dev_disp_text (TextIoU, 'window', 'bottom', 'center', ['black', '#ff781aff', '#48c2ffff'], [], [])</l>
+<c>* </c>
+<c>* Display the explanation.</c>
+<l>get_dict_tuple (ExampleInternals, 'window_text', WindowHandleText)</l>
+<l>dev_set_window (WindowHandleText)</l>
+<c>* </c>
+<l>get_dict_tuple (ExampleInternals, 'example_evaluation_params', ExampleEvaluationParams)</l>
+<l>get_dict_tuple (ExampleEvaluationParams, 'iou_threshold', IoUThreshold)</l>
+<l>IoUThresholdString := '[' + IoUThreshold[0]$'.2f'</l>
+<l>IoUThresholdString := IoUThresholdString + ', ' + IoUThreshold[1]$'.2f'</l>
+<l>IoUThresholdString := IoUThresholdString + ',..., ' + IoUThreshold[|IoUThreshold| - 1]$'.2f' + ']'</l>
+<l>get_dict_tuple (ExampleInternals, 'example_evaluation_results', ExampleEvaluationResults)</l>
+<c></c>
+<l>Text := 'IoU Thresholds'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'The parameter \'iou_threshold\' specifies the thresholds on the'</l>
+<l>Text[|Text|] := 'intersection over union (IoU) used during evaluation. The IoU'</l>
+<l>Text[|Text|] := 'quantifies, how precise a detection matches a ground truth'</l>
+<l>Text[|Text|] := 'object (see below). An exact match results in an IoU = 1.0.'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'As default the evaluation is performed for the thresholds'</l>
+<l>Text[|Text|] := '\'iou_threshold\' = ' + IoUThresholdString + '. For each IoU threshold the'</l>
+<l>Text[|Text|] := 'measure \'mean_ap\' and the average precision for each class is calculated'</l>
+<l>Text[|Text|] := 'as area under the precision-recall curve. These measures are additionally'</l>
+<l>Text[|Text|] := 'computed as average over all respective values per IoU threshold.'</l>
+<l>Text[|Text|] := ''</l>
+<c>* </c>
+<l>dev_set_window (WindowHandleText)</l>
+<l>dev_disp_text (Text, 'window', 'top', 'left', 'black', 'box', 'true')</l>
+<l>dev_disp_text ('Press Run (F5) to continue', 'window', 'bottom', 'right', 'black', [], [])</l>
+<c>* </c>
+<l>return ()</l>
+</body>
+<docu id="dev_display_screen_explain_iou_threshold">
+<parameters>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_screen_explain_detailed_evaluation_part_1">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure displays the precision for an example evaluation.</c>
+<c>* </c>
+<l>get_dict_tuple (ExampleInternals, 'show_example_screens', ShowExampleScreens)</l>
+<l>if (not ShowExampleScreens)</l>
+<l>    return ()</l>
+<l>endif</l>
+<c>* </c>
+<c>* Reset the open windows for a clean display.</c>
+<l>set_dict_tuple (ExampleInternals, 'window_images_needed', false)</l>
+<l>set_dict_tuple (ExampleInternals, 'window_legend_needed', false)</l>
+<l>dev_display_example_reset_windows (ExampleInternals)</l>
+<c>* </c>
+<c>* Display the overview on the different example parts.</c>
+<l>get_dict_tuple (ExampleInternals, 'window_text', WindowHandleText)</l>
+<l>dev_set_window (WindowHandleText)</l>
+<c>* </c>
+<l>Text := 'Detailed Evaluation: Precision'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'If \'evaluate_dl_model\' was called with \'detailed_evaluation\''</l>
+<l>Text[|Text|] := 'enabled, the procedure'</l>
+<l>Text[|Text|] := '\'dev_display_detection_detailed_evaluation\' allows to inspect'</l>
+<l>Text[|Text|] := 'the results.'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'Below, pie charts of the precision (true positive rate) and the'</l>
+<l>Text[|Text|] := 'false positive rates are shown over all classes and for each class'</l>
+<l>Text[|Text|] := 'separately for an example evaluation result.'</l>
+<c>* </c>
+<l>dev_disp_text (Text, 'window', 'top', 'left', 'black', 'box', 'true')</l>
+<l>dev_disp_text ('Press Run (F5) to continue', 'window', 'bottom', 'right', 'black', [], [])</l>
+<c>* </c>
+<l>create_dict (WindowHandleDict)</l>
+<l>get_dict_tuple (ExampleInternals, 'example_evaluation_results', ExampleEvaluationResults)</l>
+<l>get_dict_tuple (ExampleInternals, 'example_evaluation_params', ExampleEvaluationParams)</l>
+<l>get_dict_tuple (ExampleInternals, 'window_text_height', Height)</l>
+<l>create_dict (GenParams)</l>
+<l>set_dict_tuple (GenParams, 'display_mode', 'pie_charts_precision')</l>
+<l>set_dict_tuple (GenParams, 'window_row', Height + 55)</l>
+<l>dev_display_detection_detailed_evaluation (ExampleEvaluationResults, ExampleEvaluationParams, GenParams, WindowHandleDict)</l>
+<c>* </c>
+<l>dev_display_example_add_window_handles_to_close (ExampleInternals, WindowHandleDict)</l>
+<l>return ()</l>
+</body>
+<docu id="dev_display_screen_explain_detailed_evaluation_part_1">
+<parameters>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_screen_explain_detailed_evaluation_part_2">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure displays the recall for an example evaluation.</c>
+<c>* </c>
+<l>get_dict_tuple (ExampleInternals, 'show_example_screens', ShowExampleScreens)</l>
+<l>if (not ShowExampleScreens)</l>
+<l>    return ()</l>
+<l>endif</l>
+<c>* </c>
+<c>* Reset the open windows for a clean display.</c>
+<l>set_dict_tuple (ExampleInternals, 'window_images_needed', false)</l>
+<l>set_dict_tuple (ExampleInternals, 'window_legend_needed', false)</l>
+<l>dev_display_example_reset_windows (ExampleInternals)</l>
+<c>* </c>
+<c>* Display the overview on the different example parts.</c>
+<l>get_dict_tuple (ExampleInternals, 'window_text', WindowHandleText)</l>
+<l>dev_set_window (WindowHandleText)</l>
+<c>* </c>
+<l>Text := 'Detailed Evaluation: Recall'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'Depending on the values of the parameter \'display_mode\','</l>
+<l>Text[|Text|] := 'more results can be displayed.'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'Below \'display_mode\' is set to \'pie_charts_recall\', which'</l>
+<l>Text[|Text|] := 'gives information on the recall and the false negative rate.'</l>
+<c>* </c>
+<c>* </c>
+<l>dev_disp_text (Text, 'window', 'top', 'left', 'black', 'box', 'true')</l>
+<l>dev_disp_text ('Press Run (F5) to continue', 'window', 'bottom', 'right', 'black', [], [])</l>
+<c>* </c>
+<l>create_dict (WindowHandleDict)</l>
+<l>get_dict_tuple (ExampleInternals, 'example_evaluation_results', ExampleEvaluationResults)</l>
+<l>get_dict_tuple (ExampleInternals, 'example_evaluation_params', ExampleEvaluationParams)</l>
+<l>get_dict_tuple (ExampleInternals, 'window_text_height', Height)</l>
+<l>create_dict (GenParams)</l>
+<l>set_dict_tuple (GenParams, 'display_mode', 'pie_charts_recall')</l>
+<l>set_dict_tuple (GenParams, 'window_row', Height + 55)</l>
+<l>dev_display_detection_detailed_evaluation (ExampleEvaluationResults, ExampleEvaluationParams, GenParams, WindowHandleDict)</l>
+<c>* </c>
+<l>dev_display_example_add_window_handles_to_close (ExampleInternals, WindowHandleDict)</l>
+<l>return ()</l>
+</body>
+<docu id="dev_display_screen_explain_detailed_evaluation_part_2">
+<parameters>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_screen_explain_detailed_evaluation_part_3">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure displays the confusion matrix for an example evaluation.</c>
+<c>* </c>
+<l>get_dict_tuple (ExampleInternals, 'show_example_screens', ShowExampleScreens)</l>
+<l>if (not ShowExampleScreens)</l>
+<l>    return ()</l>
+<l>endif</l>
+<c>* </c>
+<c>* Reset the open windows for a clean display.</c>
+<l>set_dict_tuple (ExampleInternals, 'window_images_needed', false)</l>
+<l>set_dict_tuple (ExampleInternals, 'window_legend_needed', false)</l>
+<l>dev_display_example_reset_windows (ExampleInternals)</l>
+<c>* </c>
+<c>* Display the overview on the different example parts.</c>
+<l>get_dict_tuple (ExampleInternals, 'window_text', WindowHandleText)</l>
+<l>dev_set_window (WindowHandleText)</l>
+<c>* </c>
+<l>Text := 'Detailed Evaluation: Confusion Matrix'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'The confusion matrix summarizes the pie chart diagrams seen on the'</l>
+<l>Text[|Text|] := 'two previous screens in one matrix. It can be obtained by setting'</l>
+<l>Text[|Text|] := '\'display_mode\' to \'absolute_confusion_matrix\' or'</l>
+<l>Text[|Text|] := '\'relative_confusion_matrix\'.'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'Below, the confusion matrix with the absolute numbers is shown for'</l>
+<l>Text[|Text|] := 'our example evaluation.'</l>
+<c>* </c>
+<c>* </c>
+<l>dev_disp_text (Text, 'window', 'top', 'left', 'black', 'box', 'true')</l>
+<l>dev_disp_text ('Press Run (F5) to continue', 'window', 'bottom', 'right', 'black', [], [])</l>
+<c>* </c>
+<l>create_dict (WindowHandleDict)</l>
+<l>get_dict_tuple (ExampleInternals, 'example_evaluation_results', ExampleEvaluationResults)</l>
+<l>get_dict_tuple (ExampleInternals, 'example_evaluation_params', ExampleEvaluationParams)</l>
+<l>get_dict_tuple (ExampleInternals, 'window_text_height', Height)</l>
+<l>create_dict (GenParams)</l>
+<l>set_dict_tuple (GenParams, 'display_mode', 'absolute_confusion_matrix')</l>
+<l>set_dict_tuple (GenParams, 'window_row', Height + 55)</l>
+<l>dev_display_detection_detailed_evaluation (ExampleEvaluationResults, ExampleEvaluationParams, GenParams, WindowHandleDict)</l>
+<c>* </c>
+<l>dev_display_example_add_window_handles_to_close (ExampleInternals, WindowHandleDict)</l>
+<l>return ()</l>
+</body>
+<docu id="dev_display_screen_explain_detailed_evaluation_part_3">
+<parameters>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_example_add_window_handles_to_close">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+<par name="WindowHandleDict" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure saves window handles, which are going to be closed by</c>
+<c>* dev_display_example_reset_window</c>
+<c>* </c>
+<l>WindowHandlesToClose := []</l>
+<l>try</l>
+<l>    get_dict_tuple (ExampleInternals, 'window_handles_to_close', WindowHandlesToClose)</l>
+<l>catch (Exception)</l>
+<l>endtry</l>
+<l>get_dict_param (WindowHandleDict, 'keys', [], Keys)</l>
+<l>for IndexKeys := 0 to |Keys| - 1 by 1</l>
+<l>    get_dict_tuple (WindowHandleDict, Keys[IndexKeys], WindowHandle)</l>
+<l>    WindowHandlesToClose := [WindowHandlesToClose,WindowHandle]</l>
+<l>endfor</l>
+<l>set_dict_tuple (ExampleInternals, 'window_handles_to_close', WindowHandlesToClose)</l>
+<l>return ()</l>
+</body>
+<docu id="dev_display_example_add_window_handles_to_close">
+<short lang="en_US">Add dict of window handles to close in next call to dev_display_example_reset_window</short>
+<parameters>
+<parameter id="ExampleInternals"/>
+<parameter id="WindowHandleDict"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_end_of_program">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure closes all example windows.</c>
+<c>* </c>
+<l>get_dict_tuple (ExampleInternals, 'show_example_screens', ShowExampleScreens)</l>
+<l>if (not ShowExampleScreens)</l>
+<l>    return ()</l>
+<l>endif</l>
+<c>* Reopen text window</c>
+<l>dev_display_example_init_text_window (ExampleInternals)</l>
+<c>* </c>
+<c>* Display explanatory text.</c>
+<l>get_dict_tuple (ExampleInternals, 'window_text', WindowHandleText)</l>
+<l>dev_set_window (WindowHandleText)</l>
+<c>* </c>
+<l>Text := 'Now, the third part \'Evaluation of the trained model\' of the workflow'</l>
+<l>Text[|Text|] := 'for DL object detection is finished.'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'The model has been evaluated and the results have been inspected.'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'If the performance of the model satisfies the requirements,'</l>
+<l>Text[|Text|] := 'it can now be applied to new images.'</l>
+<l>Text[|Text|] := 'To see the DL object detection inference process, please run'</l>
+<l>Text[|Text|] := '\'detect_pills_deep_learning_4_infer.hdev\'.'</l>
+<c>* </c>
+<l>dev_disp_text (Text, 'window', 'top', 'left', 'black', 'box', 'true')</l>
+<l>dev_disp_text ('Please open the next example.', 'window', 'bottom', 'right', 'black', [], [])</l>
+<l>return ()</l>
+</body>
+<docu id="dev_display_end_of_program">
+<parameters>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_example_init_text_window">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<l>WindowWidthText := 800</l>
+<l>WindowHeightText := 300</l>
+<l>WindowBGColor := 'gray'</l>
+<l>dev_open_window (0, 0, WindowWidthText, WindowHeightText, WindowBGColor, WindowHandleText)</l>
+<l>set_display_font (WindowHandleText, 16, 'mono', 'true', 'false')</l>
+<l>set_dict_tuple (ExampleInternals, 'window_text', WindowHandleText)</l>
+<l>set_dict_tuple (ExampleInternals, 'window_text_width', WindowWidthText)</l>
+<l>set_dict_tuple (ExampleInternals, 'window_text_height', WindowHeightText)</l>
+<l>return ()</l>
+</body>
+<docu id="dev_display_example_init_text_window">
+<parameters>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="check_data_availability">
+<interface>
+<ic>
+<par name="ExampleDataDir" base_type="ctrl" dimension="0"/>
+<par name="DLDatasetFileName" base_type="ctrl" dimension="0"/>
+<par name="TrainedModelFileName" base_type="ctrl" dimension="0"/>
+<par name="UsePretrainedModel" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure checks the availability of all files required to run the</c>
+<c>* evaluation example.</c>
+<c>* </c>
+<l>file_exists (ExampleDataDir, FileExists)</l>
+<l>if (not FileExists)</l>
+<l>    throw (ExampleDataDir + ' does not exist. Please run part 1 of example series.')</l>
+<l>endif</l>
+<c>* </c>
+<l>file_exists (DLDatasetFileName, FileExists)</l>
+<l>if (not FileExists)</l>
+<l>    throw (DLDatasetFileName + ' does not exist. Please run part 1 of example series.')</l>
+<l>endif</l>
+<c>* </c>
+<l>file_exists (TrainedModelFileName, FileExists)</l>
+<l>if (not FileExists)</l>
+<l>    if (UsePretrainedModel)</l>
+<l>        throw (TrainedModelFileName + ' does not exist. Please run the HALCON Deep Learning installer.')</l>
+<l>    else</l>
+<l>        throw (TrainedModelFileName + ' does not exist. Please run part 2 of example series.')</l>
+<l>    endif</l>
+<l>endif</l>
+<c>* </c>
+<l>return ()</l>
+</body>
+<docu id="check_data_availability">
+<parameters>
+<parameter id="DLDatasetFileName"/>
+<parameter id="ExampleDataDir"/>
+<parameter id="TrainedModelFileName"/>
+<parameter id="UsePretrainedModel"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_screen_explain_evaluation">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure displays shows the result of an example evaluation.</c>
+<c>* </c>
+<l>get_dict_tuple (ExampleInternals, 'show_example_screens', ShowExampleScreens)</l>
+<l>if (not ShowExampleScreens)</l>
+<l>    return ()</l>
+<l>endif</l>
+<c>* </c>
+<c>* Reset the open windows for a clean display.</c>
+<l>set_dict_tuple (ExampleInternals, 'window_images_needed', true)</l>
+<l>set_dict_tuple (ExampleInternals, 'window_legend_needed', false)</l>
+<l>dev_display_example_reset_windows (ExampleInternals)</l>
+<l>get_dict_tuple (ExampleInternals, 'window_images', WindowHandleImages)</l>
+<c>* </c>
+<c>* Display the overview on the different example parts.</c>
+<l>get_dict_tuple (ExampleInternals, 'window_text', WindowHandleText)</l>
+<l>dev_set_window (WindowHandleText)</l>
+<c>* </c>
+<l>Text := 'Evaluation Results'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'The result of an evaluation is returned in the dict EvaluationResult.'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'Below you see the main results for an example evaluation with three IoU'</l>
+<l>Text[|Text|] := 'thresholds. For each class and each IoU value the average precision (AP)'</l>
+<l>Text[|Text|] := 'was calculated as area under the precision-recall curve. In the last row'</l>
+<l>Text[|Text|] := 'the mean AP over all classes, the \'mean_class_ap\', is displayed. The last'</l>
+<l>Text[|Text|] := 'column shows the mean AP over the IoU thresholds for each class'</l>
+<l>Text[|Text|] := '(\'mean_iou_ap\'). The \'mean_ap\' is the mean of these mean values, and'</l>
+<l>Text[|Text|] := 'summarizes the evaluation results with a single value.'</l>
+<c>* </c>
+<l>dev_disp_text (Text, 'window', 'top', 'left', 'black', 'box', 'true')</l>
+<l>dev_disp_text ('Press Run (F5) to continue', 'window', 'bottom', 'right', 'black', [], [])</l>
+<c>* </c>
+<l>get_dict_tuple (ExampleInternals, 'example_evaluation_results', ExampleEvaluationResults)</l>
+<l>get_dict_tuple (ExampleInternals, 'example_evaluation_params', ExampleEvaluationParams)</l>
+<c>* </c>
+<c>* Select the results of interest</c>
+<l>get_dict_tuple (ExampleEvaluationResults, 'max_num_detections_all', EvaluationResultsArea)</l>
+<l>get_dict_tuple (EvaluationResultsArea, 'area_all', EvaluationResultsIoU)</l>
+<l>get_dict_param (EvaluationResultsIoU, 'keys', [], EvaluationResultsIoUKeys)</l>
+<c>* </c>
+<l>IoUKeys := []</l>
+<l>ClassKeys := []</l>
+<l>for KeyIndex := 0 to |EvaluationResultsIoUKeys| - 1 by 1</l>
+<l>    if (regexp_test(EvaluationResultsIoUKeys[KeyIndex],'ap_iou_.*'))</l>
+<l>        IoUKeys := [IoUKeys,EvaluationResultsIoUKeys[KeyIndex]]</l>
+<l>    endif</l>
+<l>endfor</l>
+<l>get_dict_tuple (EvaluationResultsIoU, IoUKeys[0], EvaluationResultsIoU0)</l>
+<l>get_dict_param (EvaluationResultsIoU0, 'keys', [], ClassKeys)</l>
+<c>* </c>
+<c>* Create and fill AP matrix</c>
+<l>create_matrix (|ClassKeys|, |IoUKeys| + 1, 0.0, MatrixID)</l>
+<l>for ColIndex := 0 to |IoUKeys| - 1 by 1</l>
+<l>    get_dict_tuple (EvaluationResultsIoU, IoUKeys[ColIndex], IoUClassAP)</l>
+<l>    for RowIndex := 0 to |ClassKeys| - 1 by 1</l>
+<l>        get_dict_tuple (IoUClassAP, ClassKeys[RowIndex], ClassAP)</l>
+<l>        set_value_matrix (MatrixID, RowIndex, ColIndex, ClassAP)</l>
+<l>    endfor</l>
+<l>endfor</l>
+<c>* </c>
+<c>* Add mean IoU AP column</c>
+<l>IoUKeys := [IoUKeys,'mean_iou_ap']</l>
+<l>get_dict_tuple (EvaluationResultsIoU, IoUKeys[|IoUKeys| - 1], MeanIoUAP)</l>
+<l>for RowIndex := 0 to |ClassKeys| - 2 by 1</l>
+<l>    get_dict_tuple (MeanIoUAP, ClassKeys[RowIndex], ClassAP)</l>
+<l>    set_value_matrix (MatrixID, RowIndex, ColIndex, ClassAP)</l>
+<l>endfor</l>
+<c>* </c>
+<c>* Add mean IoU</c>
+<l>get_dict_tuple (EvaluationResultsIoU, 'mean_ap', MeanAP)</l>
+<l>set_value_matrix (MatrixID, RowIndex, ColIndex, MeanAP)</l>
+<c>* </c>
+<c>* Display AP matrix</c>
+<l>create_dict (GenParam)</l>
+<l>set_dict_tuple (GenParam, 'number_format', '1.2f')</l>
+<l>get_dict_tuple (ExampleInternals, 'window_text_height', TextWindowHeight)</l>
+<l>set_dict_tuple (GenParam, 'window_row', TextWindowHeight + 55)</l>
+<l>set_dict_tuple (GenParam, 'title', 'Evaluation Results: Class and Mean AP')</l>
+<l>set_dict_tuple (GenParam, 'row_col_names_color', 'black')</l>
+<l>set_dict_tuple (GenParam, 'axis_titles', ['IoU thresholds', 'Classes'])</l>
+<l>set_dict_tuple (GenParam, 'display_color', true)</l>
+<l>Colors := gen_tuple_const(|IoUKeys| * |ClassKeys|,'navy')</l>
+<l>Colors[|Colors| - 1] := 'forest green'</l>
+<l>set_dict_tuple (GenParam, 'value_colors', Colors)</l>
+<l>dev_display_ap_matrix (MatrixID, IoUKeys, ClassKeys, WindowHandleImages, GenParam)</l>
+<l>dev_disp_text ('mean_ap', 'window', 'bottom', 'right', 'forest green', 'box', 'false')</l>
+<c>* </c>
+<l>return ()</l>
+</body>
+<docu id="dev_display_screen_explain_evaluation">
+<parameters>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_ap_matrix">
+<interface>
+<ic>
+<par name="Matrix" base_type="ctrl" dimension="0"/>
+<par name="ColumnNames" base_type="ctrl" dimension="0"/>
+<par name="RowNames" base_type="ctrl" dimension="0"/>
+<par name="WindowHandle" base_type="ctrl" dimension="0"/>
+<par name="GenParam" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* Display a matrix in a window.</c>
+<c>* </c>
+<c>* GenParam (all are optional):</c>
+<c>*   - display_column_width: Either 'equal' or 'minimal'. For 'equal', all columns have the same width</c>
+<c>*                           that equals the width of the longest row or column-name.</c>
+<c>*   - display_color:        If true, the values will be displayed with the colors that are given by</c>
+<c>*                           'value_colors'.</c>
+<c>*                           Else, all values are displayed in white.</c>
+<c>*   - idxs_no_display:      Indices of the matrix that should not be displayed. The indices should be</c>
+<c>*                           given in row-major order, according to get_full_matrix. If not given or if</c>
+<c>*                           set to an empty tuple, all matrix values are displayed.</c>
+<c>*   - axis_titles:          Titles for the matrix x- and y-axis that are displayed at the top-right</c>
+<c>*                           and bottom-left of the matrix, respectively. Should be a tuple of length</c>
+<c>*                           two or an empty tuple if no axis titles should be displayed.</c>
+<c>*   - value_colors:         Tuple containing the hex color-string for each value of the matrix. If a</c>
+<c>*                           single value is given, this color is used for all values, else it must have</c>
+<c>*                           the length of the number of values in the matrix. Is ignored if</c>
+<c>*                           display_color is false.</c>
+<c>*   - number_format:        Format of the numbers when they are converted to strings for display.</c>
+<c>*                           Default: 2.0f</c>
+<c>*   - title:                Title of the displayed matrix, if given shown in the top-left.</c>
+<c>*   - row_col_names_color:  Color of column and row names. Default: 'light gray'</c>
+<c>* </c>
+<c>* </c>
+<c>* Get the matrix dimensions.</c>
+<l>get_size_matrix (Matrix, NumRows, NumColumns)</l>
+<c>* Set defaults params.</c>
+<l>DisplayColumnWidth := 'equal'</l>
+<l>DisplayColor := false</l>
+<l>IdxsNoDisplay := []</l>
+<l>AxisTitles := []</l>
+<l>ValueColors := gen_tuple_const(NumRows * NumColumns,'white')</l>
+<l>NumberFormat := '2.0f'</l>
+<l>Title := []</l>
+<l>AxisColor := 'light gray'</l>
+<l>WindowRow := 0</l>
+<l>WindowColumn := 0</l>
+<c>* Get parameters and overwrite</c>
+<l>GenParamKeys := ['display_column_width', 'display_color', 'idxs_no_display', 'axis_titles', 'value_colors', 'number_format', 'title', 'row_col_names_color', 'window_row', 'window_column']</l>
+<l>if (|GenParam| &gt; 0)</l>
+<l>    get_dict_param (GenParam, 'key_exists', GenParamKeys, KeyExists)</l>
+<c>    * DisplayColumnWidth.</c>
+<l>    if (KeyExists[0])</l>
+<l>        get_dict_tuple (GenParam, 'display_column_width', ValueTmp)</l>
+<l>        if (|ValueTmp| != 1 or find(['equal', 'minimal'],ValueTmp) == -1)</l>
+<l>            throw ('Invalid value for \'display_column_width\'')</l>
+<l>        else</l>
+<l>            DisplayColumnWidth := ValueTmp</l>
+<l>        endif</l>
+<l>    endif</l>
+<c>    * DisplayColor.</c>
+<l>    if (KeyExists[1])</l>
+<l>        get_dict_tuple (GenParam, 'display_color', ValueTmp)</l>
+<l>        if (|ValueTmp| != 1 or find([true, false],ValueTmp) == -1)</l>
+<l>            throw ('Invalid value for \'display_color\'')</l>
+<l>        else</l>
+<l>            DisplayColor := ValueTmp</l>
+<l>        endif</l>
+<l>    endif</l>
+<c>    * ValueIdxsNoDisplay.</c>
+<l>    if (KeyExists[2])</l>
+<l>        get_dict_tuple (GenParam, 'idxs_no_display', ValueTmp)</l>
+<l>        if (|ValueTmp| &gt; 0)</l>
+<l>            if (min(ValueTmp) &lt; 0 or max(ValueTmp) &gt; NumRows * NumColumns - 1 or not is_int(ValueTmp) or |ValueTmp| &gt; NumRows * NumColumns)</l>
+<l>                throw ('Invalid value for \'idxs_no_display\'')</l>
+<l>            endif</l>
+<l>        endif</l>
+<l>        IdxsNoDisplay := ValueTmp</l>
+<l>    endif</l>
+<c>    * AxisTitles.</c>
+<l>    if (KeyExists[3])</l>
+<l>        get_dict_tuple (GenParam, 'axis_titles', ValueTmp)</l>
+<l>        if (|ValueTmp| &gt; 0)</l>
+<l>            if (|ValueTmp| &gt; 2 or is_string_elem(ValueTmp) != gen_tuple_const(|ValueTmp|,1))</l>
+<l>                throw ('Invalid value for \'axis_titles\'')</l>
+<l>            endif</l>
+<l>        endif</l>
+<l>        AxisTitles := ValueTmp</l>
+<l>    endif</l>
+<c>    * ValueColors.</c>
+<l>    if (KeyExists[4] and DisplayColor)</l>
+<l>        get_dict_tuple (GenParam, 'value_colors', ValueTmp)</l>
+<l>        if (|ValueTmp| &gt; 0)</l>
+<l>            if ((|ValueTmp| != NumColumns * NumRows and |ValueTmp| != 1) or not is_string(ValueTmp))</l>
+<l>                throw ('Invalid value for \'value_colors\'')</l>
+<l>            endif</l>
+<l>            if (|ValueTmp| == 1)</l>
+<l>                ValueTmp := gen_tuple_const(NumRows * NumColumns,ValueTmp)</l>
+<l>            endif</l>
+<l>        endif</l>
+<l>        ValueColors := ValueTmp</l>
+<l>    endif</l>
+<c>    * NumberFormat.</c>
+<l>    if (KeyExists[5])</l>
+<l>        get_dict_tuple (GenParam, 'number_format', ValueTmp)</l>
+<l>        if (|ValueTmp| != 1 or not is_string(ValueTmp))</l>
+<l>            throw ('Invalid value for \'number_format\'')</l>
+<l>        else</l>
+<l>            NumberFormat := ValueTmp</l>
+<l>        endif</l>
+<l>    endif</l>
+<c>    * Title.</c>
+<l>    if (KeyExists[6])</l>
+<l>        get_dict_tuple (GenParam, 'title', ValueTmp)</l>
+<l>        if (|ValueTmp| != 1 or not is_string(ValueTmp))</l>
+<l>            throw ('Invalid value for \'title\'')</l>
+<l>        else</l>
+<l>            Title := ValueTmp</l>
+<l>        endif</l>
+<l>    endif</l>
+<c>    * Color of column and row names.</c>
+<l>    if (KeyExists[7])</l>
+<l>        get_dict_tuple (GenParam, 'row_col_names_color', ValueTmp)</l>
+<l>        if (|ValueTmp| != 1 or not is_string(ValueTmp))</l>
+<l>            throw ('Invalid value for \'row_col_names_color\'')</l>
+<l>        else</l>
+<l>            AxisColor := ValueTmp</l>
+<l>        endif</l>
+<l>    endif</l>
+<c>    * Position of the window</c>
+<l>    if (KeyExists[8])</l>
+<l>        get_dict_tuple (GenParam, 'window_row', ValueTmp)</l>
+<l>        if (|ValueTmp| != 1 or ValueTmp &lt; 0)</l>
+<l>            throw ('Invalid value for \'window_row\'')</l>
+<l>        else</l>
+<l>            WindowRow := ValueTmp</l>
+<l>        endif</l>
+<l>    endif</l>
+<l>    if (KeyExists[9])</l>
+<l>        get_dict_tuple (GenParam, 'window_column', ValueTmp)</l>
+<l>        if (|ValueTmp| != 1 or ValueTmp &lt; 0)</l>
+<l>            throw ('Invalid value for \'window_column\'')</l>
+<l>        else</l>
+<l>            WindowColumn := ValueTmp</l>
+<l>        endif</l>
+<l>    endif</l>
+<l>endif</l>
+<c>* </c>
+<c>* </c>
+<c>* Calculate the width of row and column-name-strings.</c>
+<l>ColStringWidths := []</l>
+<l>AllNames := [ColumnNames,RowNames]</l>
+<l>MaxStringWidth := 0</l>
+<l>for StringIndex := 0 to |AllNames| - 1 by 1</l>
+<l>    String := AllNames[StringIndex]</l>
+<l>    get_string_extents (WindowHandle, String, Ascent, Descent, StringWidth, StringHeight)</l>
+<l>    if (StringIndex &lt; |ColumnNames|)</l>
+<l>        ColStringWidths := [ColStringWidths,StringWidth]</l>
+<l>    endif</l>
+<l>    MaxStringWidth := max2(MaxStringWidth,StringWidth)</l>
+<l>endfor</l>
+<c>* The columns should have a minimum width for 4 characters.</c>
+<l>get_string_extents (WindowHandle, 'test', Ascent, Descent, StringWidth, StringHeight)</l>
+<c>* Update the maximum string width.</c>
+<l>MaxStringWidth := max2(MaxStringWidth,StringWidth)</l>
+<c>* </c>
+<c>* Set params for nice display, e.g., distances from window border and row- and column-offsets.</c>
+<l>RowStart := 80</l>
+<l>RowDistance := StringHeight + 10</l>
+<l>RowEnd := StringHeight * 7</l>
+<l>ColumnStart := 50 + MaxStringWidth</l>
+<l>ColumnOffset := 30</l>
+<l>ColumnEnd := ColumnOffset</l>
+<c>* </c>
+<c>* Adapt the window size to fit the confusion matrix.</c>
+<l>if (DisplayColumnWidth == 'minimal')</l>
+<c>    * Every column of the confusion matrix is as narrow as possible</c>
+<c>    * based to the respective string widths.</c>
+<l>    Width := sum(ColStringWidths) + ColumnOffset * NumColumns + ColumnStart + ColumnEnd</l>
+<l>elseif (DisplayColumnWidth == 'equal')</l>
+<c>    * Every column of the confusion matrix should have the same width.</c>
+<c>    * based on the maximum string width.</c>
+<l>    Width := (MaxStringWidth + ColumnOffset) * NumColumns + ColumnStart + ColumnEnd</l>
+<l>endif</l>
+<l>Height := RowDistance * NumRows + RowStart + RowEnd</l>
+<l>dev_set_window (WindowHandle)</l>
+<l>dev_clear_window ()</l>
+<c>* </c>
+<c>* Set reasonable limits for graphics window (adapt if necessary).</c>
+<l>WidthLimit := [450,Width]</l>
+<l>HeightLimit := [250,Height]</l>
+<l>dev_resize_window_fit_size (WindowRow, WindowColumn, Width, Height, WidthLimit, HeightLimit)</l>
+<c>* </c>
+<c>* </c>
+<c>* Calculate row and column coordinates for display of values.</c>
+<l>TextRow := []</l>
+<l>TextColumn := []</l>
+<l>RowStartTmp := 0</l>
+<l>ColumnDistance := [0,cumul(ColStringWidths[0:NumColumns - 2] + ColumnOffset)]</l>
+<l>if (DisplayColumnWidth == 'equal')</l>
+<l>    ColumnDistance := [0:NumColumns - 1] * (MaxStringWidth + ColumnOffset)</l>
+<l>endif</l>
+<l>for Index := 0 to NumRows - 1 by 1</l>
+<l>    TextRow := [TextRow,gen_tuple_const(NumColumns,RowStartTmp)]</l>
+<l>    RowStartTmp := RowStartTmp + RowDistance</l>
+<l>    TextColumn := [TextColumn,ColumnDistance]</l>
+<l>endfor</l>
+<c>* Display the confusion matrix with a margin from the top and left.</c>
+<l>TextColumn := TextColumn + ColumnStart</l>
+<l>TextRow := TextRow + RowStart</l>
+<c>* </c>
+<c>* Display axis titles.</c>
+<l>if (|AxisTitles| &gt; 0)</l>
+<l>    if (|Title| &gt; 0)</l>
+<l>        get_string_extents (WindowHandle, Title, TitleAscent, TitleDescent, TitleWidth, TitleHeight)</l>
+<l>        AxisTitleRowX := 2 * ceil(TitleHeight)</l>
+<l>    else</l>
+<l>        AxisTitleRowX := 'top'</l>
+<l>    endif</l>
+<l>    dev_disp_text (AxisTitles[0], 'window', AxisTitleRowX, 'right', 'black', 'box', 'false')</l>
+<l>    dev_disp_text (AxisTitles[1], 'window', 'bottom', 'left', 'black', 'box', 'false')</l>
+<l>endif</l>
+<c>* </c>
+<c>* Display title.</c>
+<l>if (|Title| &gt; 0)</l>
+<l>    dev_disp_text (Title, 'window', 'top', 'left', 'black', 'box', 'false')</l>
+<l>endif</l>
+<c>* </c>
+<c>* Display row names.</c>
+<l>dev_disp_text (RowNames, 'window', TextRow[[0:NumColumns:NumColumns * (NumRows - 1)]], gen_tuple_const(NumRows,TextColumn[0] - MaxStringWidth - ColumnOffset), AxisColor, 'box', 'false')</l>
+<c>* </c>
+<c>* Display column names.</c>
+<l>dev_disp_text (ColumnNames, 'window', gen_tuple_const(NumColumns,TextRow[0] - RowDistance), TextColumn[0:NumColumns - 1], AxisColor, 'box', 'false')</l>
+<c>* </c>
+<c>* </c>
+<c>* Align the numbers right.</c>
+<l>get_full_matrix (Matrix, MatrixText)</l>
+<l>MatrixText := MatrixText$NumberFormat</l>
+<c>* </c>
+<c>* </c>
+<c>* Handle no-display indices.</c>
+<l>IdxsDisplay := difference([0:|MatrixText| - 1],IdxsNoDisplay)</l>
+<c>* </c>
+<c>* Display confusion matrix.</c>
+<l>dev_disp_text (MatrixText[IdxsDisplay], 'window', TextRow[IdxsDisplay], TextColumn[IdxsDisplay], ValueColors[IdxsDisplay], 'box', 'false')</l>
+<l>return ()</l>
+</body>
+<docu id="dev_display_ap_matrix">
+<parameters>
+<parameter id="ColumnNames"/>
+<parameter id="GenParam"/>
+<parameter id="Matrix"/>
+<parameter id="RowNames"/>
+<parameter id="WindowHandle"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_screen_model_optimization_info" access="local">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure mentions that we</c>
+<c>* optimize the model for memory consumption</c>
+<c>* at the end of this example.</c>
+<c>* </c>
+<c>* Reset the open windows for a clean display.</c>
+<l>set_dict_tuple (ExampleInternals, 'window_images_needed', false)</l>
+<l>set_dict_tuple (ExampleInternals, 'window_legend_needed', false)</l>
+<l>dev_display_example_reset_windows (ExampleInternals)</l>
+<c>* </c>
+<l>get_dict_tuple (ExampleInternals, 'window_text', WindowHandleText)</l>
+<l>dev_set_window (WindowHandleText)</l>
+<c>* </c>
+<c>* Display text.</c>
+<l>Text := 'Model optimization:'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'At the end of this example the models'</l>
+<l>Text[|Text|] := 'memory consumption is optimized for inference'</l>
+<l>Text[|Text|] := '(for inference see part 4 of the example series).'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'To do so, we will set'</l>
+<l>Text[|Text|] := '  \'batch_size\' := 1'</l>
+<l>Text[|Text|] := 'and free the memory used for gradients by'</l>
+<l>Text[|Text|] := '  \'optimize_for_inference\' := \'true\'.'</l>
+<l>Text[|Text|] := ''</l>
+<l>Text[|Text|] := 'Note that we will save the memory optimized model'</l>
+<l>Text[|Text|] := 'over the read model.'</l>
+<c>* </c>
+<l>dev_disp_text (Text, 'window', 'top', 'left', 'black', 'box', 'true')</l>
+<l>dev_disp_text ('Press Run (F5) to continue', 'window', 'bottom', 'right', 'black', 'box', 'true')</l>
+<c>* </c>
+<l>return ()</l>
+</body>
+<docu id="dev_display_screen_model_optimization_info">
+<abstract lang="en_US">Mention that this example will save the model in a state optimized for inference.</abstract>
+<parameters>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="dev_display_screen_device">
+<interface>
+<ic>
+<par name="ExampleInternals" base_type="ctrl" dimension="0"/>
+<par name="DLDevice" base_type="ctrl" dimension="0"/>
+</ic>
+</interface>
+<body>
+<c>* This procedure displays information about the used device.</c>
+<c></c>
+<c>* Reset the open windows for a clean display.</c>
+<l>set_dict_tuple (ExampleInternals, 'window_images_needed', false)</l>
+<l>set_dict_tuple (ExampleInternals, 'window_legend_needed', false)</l>
+<l>dev_display_example_reset_windows (ExampleInternals)</l>
+<c></c>
+<c>* Display the explanatory text.</c>
+<l>get_dict_tuple (ExampleInternals, 'window_text', WindowHandleText)</l>
+<l>dev_set_window (WindowHandleText)</l>
+<c></c>
+<l>get_dl_device_param (DLDevice, 'type', DLDeviceType)</l>
+<l>get_dl_device_param (DLDevice, 'name', DLDeviceName)</l>
+<c></c>
+<l>Text := 'This example can be run on a GPU or CPU.'</l>
+<l>Text[|Text|] := ''</l>
+<l>if (DLDeviceType != 'gpu')</l>
+<l>    Text[|Text|] := 'No GPU with necessary drivers and libraries has been found.'</l>
+<l>    Text[|Text|] := ''</l>
+<l>endif</l>
+<l>Text[|Text|] := 'This example will run the deep learning operators'</l>
+<l>Text[|Text|] := 'on the following device:'</l>
+<l>Text[|Text|] := 'Device type: ' + DLDeviceType</l>
+<l>Text[|Text|] := 'Device name: ' + DLDeviceName</l>
+<c></c>
+<l>dev_disp_text (Text, 'window', 'top', 'left', 'black', 'box', 'true')</l>
+<l>dev_disp_text ('Press Run (F5) to continue', 'window', 'bottom', 'right', 'black', [], [])</l>
+<c></c>
+<l>return ()</l>
+</body>
+<docu id="dev_display_screen_device">
+<abstract lang="en_US">Display a message to mention on which device the deep learning operators will run.</abstract>
+<parameters>
+<parameter id="DLDevice"/>
+<parameter id="ExampleInternals"/>
+</parameters>
+</docu>
+</procedure>
+</hdevelop>

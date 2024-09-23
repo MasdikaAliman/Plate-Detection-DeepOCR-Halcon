@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="23.11.0.0">
+<procedure name="main">
+<interface/>
+<body>
+<l>dev_close_window()</l>
+<c></c>
+<c>*Model Path</c>
+<l>PreprocessParamFileName := '/home/dika/Documents/PKM_program/Deteksink/detect_plat_data/dldataset_plat512x320dl_preprocess_param.hdict'</l>
+<l>TrainedModelFileName := '/home/dika/Documents/PKM_program/Deteksink/detect_plat_data/best_dl_model_detection.hdl'</l>
+<c></c>
+<c>* Batch size used during inference.</c>
+<l>BatchSizeInference := 1</l>
+<c></c>
+<c>* Postprocessing parameters for the detection model.</c>
+<l>MinConfidence := 0.7</l>
+<l>MaxOverlap := 0.2</l>
+<l>MaxOverlapClassAgnostic := 0.7</l>
+<c></c>
+<c>* Inference can be done on a GPU or CPU/</c>
+<c>* If possible a GPU will be used in this program.</c>
+<l>query_available_dl_devices (['runtime', 'runtime'], ['gpu', 'cpu'], DLDeviceHandles)</l>
+<l>if (|DLDeviceHandles| == 0)</l>
+<l>    throw ('No supported device found to continue this example.')</l>
+<l>endif</l>
+<l>DLDevice := DLDeviceHandles[0]</l>
+<c></c>
+<c>*Create Model OCR</c>
+<l>create_deep_ocr ([], [], DeepOcrHandle)</l>
+<l>get_deep_ocr_param (DeepOcrHandle, 'recognition_alphabet', RecognitionAlphabet)</l>
+<l>set_deep_ocr_param (DeepOcrHandle, 'device', DLDevice)</l>
+<c></c>
+<c>* Read in the trained model.</c>
+<l>read_dl_model(TrainedModelFileName, DLModelHandle)</l>
+<c></c>
+<c>* Set batch size.</c>
+<l>set_dl_model_param(DLModelHandle, 'batch_size', BatchSizeInference)</l>
+<c></c>
+<c>* Initialize the model for inference.</c>
+<l>set_dl_model_param(DLModelHandle, 'device', DLDevice)</l>
+<c></c>
+<c>* Set postprocessing parameters for model.</c>
+<l>set_dl_model_param(DLModelHandle, 'min_confidence', MinConfidence)</l>
+<l>set_dl_model_param(DLModelHandle, 'max_overlap', MaxOverlap)</l>
+<l>set_dl_model_param(DLModelHandle, 'max_overlap_class_agnostic', MaxOverlapClassAgnostic)</l>
+<c></c>
+<c>* Get the parameters used for preprocessing.</c>
+<l>read_dict (PreprocessParamFileName, [], [], DLPreprocessParam)</l>
+<c></c>
+<c></c>
+<c>* Create dictionary with dataset parameters necessary for displaying.</c>
+<l>DLDataInfo := dict{}</l>
+<l>get_dl_model_param (DLModelHandle, 'class_names', ClassNames)</l>
+<l>DLDataInfo.class_names := ClassNames</l>
+<l>get_dl_model_param (DLModelHandle, 'class_ids', ClassIDs)</l>
+<l>DLDataInfo.class_ids := ClassIDs</l>
+<c></c>
+<l>WindowHandleDict:= dict{}</l>
+<l>TextYPos := 12</l>
+<l>TextYPositions := []</l>
+<c></c>
+<c>*Get Image from video</c>
+<l>open_framegrabber ('Video4Linux2', 2, 2, 0, 0, 0, 0, 'progressive', 8, 'default', -1, 'false', 'auto', 'video0', 0, -1, AcqHandle)</l>
+<l>grab_image_start (AcqHandle, -1)</l>
+<c> </c>
+<l>while(true)</l>
+<c>    *Grab Image</c>
+<l>    grab_image_async (Image, AcqHandle, -1)</l>
+<c>    * Resize image</c>
+<l>    zoom_image_size(Image, ResizedImage, 512, 320, 'constant')</l>
+<c>    </c>
+<c>    *detect plate</c>
+<l>    gen_dl_samples_from_images(ResizedImage, DLSampleInference)</l>
+<l>    preprocess_dl_samples (DLSampleInference, DLPreprocessParam)</l>
+<l>    apply_dl_model (DLModelHandle, DLSampleInference, [], DLResult)</l>
+<l>    dev_display_dl_data (DLSampleInference, DLResult, DLDataInfo, 'bbox_result', [], WindowHandleDict)</l>
+<c>    </c>
+<c>    *get bbox of object</c>
+<l>    get_dict_tuple(DLResult, 'bbox_col1', bboxcol)</l>
+<l>    get_dict_tuple(DLResult, 'bbox_row1', bboxrow)</l>
+<l>    get_dict_tuple(DLResult, 'bbox_col2', bboxcol2)</l>
+<l>    get_dict_tuple(DLResult, 'bbox_row2', bboxrow2)  </l>
+<l>    num_boxes := |bboxcol|</l>
+<l>    for i := 0 to num_boxes - 1 by 1</l>
+<c>       *Crop plate detection</c>
+<l>       gen_rectangle1 (Rectangle, abs(bboxrow), abs(bboxcol), abs(bboxrow2), abs(bboxcol2))</l>
+<l>       reduce_domain (ResizedImage, Rectangle, ImagePart)</l>
+<c>       </c>
+<c>       *Apply deepOCR</c>
+<l>       apply_deep_ocr (ImagePart, DeepOcrHandle, 'auto', DeepOcrResult)</l>
+<l>       *dev_display_deep_ocr_results (Image, WindowID1, DeepOcrResult, [], [])</l>
+<l>       wordsOCR := DeepOcrResult.words.word</l>
+<l>        if (i &lt; |TextYPositions|)</l>
+<l>            TextYPos := TextYPositions[i]</l>
+<l>        endif</l>
+<l>            TextYPos := i * 100 </l>
+<l>        dev_disp_text(wordsOCR,'window','center', TextYPos,'red',[],[])</l>
+<l>        *dev_display(ImagePart)</l>
+<l>    endfor</l>
+<l>endwhile</l>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+</hdevelop>
