@@ -42,3 +42,5 @@ TrainedModelFileName := '/home/dika/Documents/PKM_program/Deteksink/detect_plat_
 Once the paths are updated, you can run the plate detection and OCR using this script.
 
 ## Results Detection
+  <img src="results.png">
+
