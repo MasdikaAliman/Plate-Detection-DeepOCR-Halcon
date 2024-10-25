@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="22.11.3.0">
+<procedure name="main">
+<interface/>
+<body>
+<l>dev_update_off ()</l>
+<l>dev_close_window ()</l>
+<l>ModelPath := '/home/dika/Pictures/model_baru_pkm'</l>
+<l>PreprocessPath := '/home/dika/Pictures/PKM_DATASET512x320'</l>
+<c>*Model Path</c>
+<l>PreprocessParamFileName := PreprocessPath  + '/dl_preprocess_param.hdict'</l>
+<l>TrainedModelFileName := ModelPath + '/final_dl_model_detection.hdl'</l>
+<c></c>
+<c>* Batch size used during inference.</c>
+<l>BatchSizeInference := 1</l>
+<c></c>
+<c>* Postprocessing parameters for the detection model.</c>
+<l>MinConfidence := 0.55</l>
+<l>MaxOverlap := 0.2</l>
+<l>MaxOverlapClassAgnostic := 0.2</l>
+<c></c>
+<c>* Inference can be done on a GPU or CPU/</c>
+<c>* If possible a GPU will be used in this program.</c>
+<l>query_available_dl_devices (['runtime', 'runtime'], ['gpu', 'cpu'], DLDeviceHandles)</l>
+<l>if (|DLDeviceHandles| == 0)</l>
+<l>    throw ('No supported device found to continue this example.')</l>
+<l>endif</l>
+<l>DLDevice := DLDeviceHandles[0]</l>
+<c></c>
+<c>*Create Model OCR</c>
+<l>*create_deep_ocr ([], [], DeepOcrHandle)</l>
+<l>*get_deep_ocr_param (DeepOcrHandle, 'recognition_alphabet', RecognitionAlphabet)</l>
+<l>*set_deep_ocr_param (DeepOcrHandle, 'device', DLDevice)</l>
+<c></c>
+<c>* Read in the trained model.</c>
+<l>read_dl_model(TrainedModelFileName, DLModelHandle)</l>
+<c></c>
+<c>* Set batch size.</c>
+<l>set_dl_model_param(DLModelHandle, 'batch_size', BatchSizeInference)</l>
+<c></c>
+<c>* Initialize the model for inference.</c>
+<l>set_dl_model_param(DLModelHandle, 'device', DLDevice)</l>
+<c></c>
+<c>* Set postprocessing parameters for model.</c>
+<l>set_dl_model_param(DLModelHandle, 'min_confidence', MinConfidence)</l>
+<l>set_dl_model_param(DLModelHandle, 'max_overlap', MaxOverlap)</l>
+<l>set_dl_model_param(DLModelHandle, 'max_overlap_class_agnostic', MaxOverlapClassAgnostic)</l>
+<c></c>
+<c>* Get the parameters used for preprocessing.</c>
+<l>read_dict (PreprocessParamFileName, [], [], DLPreprocessParam)</l>
+<c></c>
+<c></c>
+<c>* Create dictionary with dataset parameters necessary for displaying.</c>
+<l>DLDataInfo := dict{}</l>
+<l>get_dl_model_param (DLModelHandle, 'class_names', ClassNames)</l>
+<l>DLDataInfo.class_names := ClassNames</l>
+<l>get_dl_model_param (DLModelHandle, 'class_ids', ClassIDs)</l>
+<l>DLDataInfo.class_ids := ClassIDs</l>
+<l>WindowHandleDict:= dict{}</l>
+<c></c>
+<l>previous_plate_x:= 0</l>
+<l>previous_plate_y:= 0</l>
+<l>hv_counter:=0</l>
+<c></c>
+<c></c>
+<l>read_image (Image, '/home/dika/Downloads/datasheetPKM/image1')</l>
+<l>zoom_image_size(Image, ResizedImage, 520, 312, 'constant')</l>
+<c></c>
+<c>    *detect plate</c>
+<l>gen_dl_samples_from_images(ResizedImage, DLSampleInference)</l>
+<l>preprocess_dl_samples (DLSampleInference, DLPreprocessParam)</l>
+<l>apply_dl_model (DLModelHandle, DLSampleInference, [], DLResult)</l>
+<l>dev_display_dl_data (DLSampleInference, DLResult, DLDataInfo, 'bbox_result', [], WindowHandleDict)</l>
+<c></c>
+<c>*get bbox of object</c>
+<c></c>
+<l>detect_class_ids := DLResult.bbox_class_id</l>
+<l>check_plate := detect_class_ids [==] 2</l>
+<c>    </c>
+<l>get_dict_tuple(DLResult, 'bbox_col1', bboxcol)</l>
+<l>get_dict_tuple(DLResult, 'bbox_row1', bboxrow)</l>
+<l>get_dict_tuple(DLResult, 'bbox_col2', bboxcol2)</l>
+<l>get_dict_tuple(DLResult, 'bbox_row2', bboxrow2)</l>
+<c>    </c>
+<l>for i:=0 to |check_plate| - 1 by 1</l>
+<l>    if(check_plate[i] == 1)</l>
+<l>            index := i</l>
+<l>            crop_rectangle1(ResizedImage2, ImagePart,row, col,row2,col2)</l>
+<l>            gen_rectangle1 (Rectangle, abs(bboxrow[index]), abs(bboxcol[index]), abs(bboxrow2[index]), abs(bboxcol2[index]))</l>
+<l>            area_center (Rectangle, Area, PlateCenterX, PlateCenterY)</l>
+<l>            move_pix_x := (PlateCenterX - previous_plate_x) </l>
+<l>            move_pix_y := (PlateCenterY - previous_plate_y)</l>
+<l>            *reduce_domain (ResizedImage, Rectangle, ImagePart)</l>
+<l>            if (abs(move_pix_x) &gt; 10 or  abs(move_pix_y) &gt; 10)</l>
+<c>            * Save plate image to folder</c>
+<l>               zoom_image_size(ImagePart, PlateZoom, 200, 200, 'constant')</l>
+<l>               write_image (PlateZoom, 'jpeg', 0, '/home/dika/Pictures/PlateCapture/PlateDetehct' + hv_counter$'.0f')</l>
+<l>               hv_counter := hv_counter + 1</l>
+<l>            endif</l>
+<l>                previous_plate_x := PlateCenterX</l>
+<l>                previous_plate_y := PlateCenterY</l>
+<l>    endif</l>
+<c>       </c>
+<l>endfor</l>
+<c>    </c>
+<l>    for I := 2 to 3718 by 1</l>
+<l>        read_image (Image2, '/home/dika/Downloads/datasheetPKM/image' + I$'.0f')</l>
+<c>        </c>
+<l>        zoom_image_size(Image2, ResizedImage2, 520, 312, 'constant')</l>
+<c>        </c>
+<c>        *detect plate</c>
+<l>        gen_dl_samples_from_images(ResizedImage2, DLSampleInference)</l>
+<l>        preprocess_dl_samples (DLSampleInference, DLPreprocessParam)</l>
+<l>        apply_dl_model (DLModelHandle, DLSampleInference, [], DLResult)</l>
+<l>        dev_display_dl_data (DLSampleInference, DLResult, DLDataInfo, 'bbox_result', [], WindowHandleDict)</l>
+<c>        *get bbox of object</c>
+<c> </c>
+<l>        get_dict_tuple(DLResult, 'bbox_class_id', checkid)</l>
+<c>    </c>
+<c>    </c>
+<l>        detect_class_ids := DLResult.bbox_class_id</l>
+<l>        check_plate := detect_class_ids [==] 2</l>
+<c>    </c>
+<l>        get_dict_tuple(DLResult, 'bbox_col1', bboxcol)</l>
+<l>        get_dict_tuple(DLResult, 'bbox_row1', bboxrow)</l>
+<l>        get_dict_tuple(DLResult, 'bbox_col2', bboxcol2)</l>
+<l>        get_dict_tuple(DLResult, 'bbox_row2', bboxrow2)</l>
+<c>    </c>
+<l>        for i:=0 to |check_plate| - 1 by 1</l>
+<l>            if(check_plate[i] == 1)</l>
+<c>                </c>
+<l>                index := i</l>
+<l>                row := abs(bboxrow[index])</l>
+<l>                col := abs(bboxcol[index])</l>
+<l>                row2 := abs(bboxrow2[index])</l>
+<l>                col2 := abs(bboxcol2[index])</l>
+<l>                crop_rectangle1(ResizedImage2, ImagePart2,row, col,row2,col2)</l>
+<l>                gen_rectangle1 (Rectangle, row, col, row2, col2)</l>
+<l>                *reduce_domain (ResizedImage2, Rectangle, ImagePart2)</l>
+<l>                area_center (Rectangle, Area, PlateCenterX, PlateCenterY)</l>
+<l>                move_pix_x := (PlateCenterX - previous_plate_x) </l>
+<l>                move_pix_y := (PlateCenterY - previous_plate_y)</l>
+<l>               if (abs(move_pix_x) &gt; 10 or  abs(move_pix_y) &gt; 10)</l>
+<c>                 * Save plate image to folder</c>
+<l>                 zoom_image_size(ImagePart2, PlateZoom2, 200, 200, 'constant')</l>
+<l>                 write_image (PlateZoom2, 'jpeg', 0, '/home/dika/Pictures/PlateCapture/result' + hv_counter$'.0f')</l>
+<l>                 hv_counter := hv_counter + 1</l>
+<l>               endif</l>
+<l>                previous_plate_x := PlateCenterX</l>
+<l>                previous_plate_y := PlateCenterY</l>
+<c>                </c>
+<l>            *crop_part (ResizedImage2, ImagePart2, abs(bboxrow[index]), abs(bboxcol[index]), abs(bboxrow2[index]), abs(bboxcol2[index]))</l>
+<l>                *dev_display(ImagePart)</l>
+<l>            endif</l>
+<c>       </c>
+<l>        endfor</l>
+<c>          * Copy the current image to the previous image of the sequence.</c>
+<l>          copy_obj (Image2, Image, 1, 1)</l>
+<c>        </c>
+<l>    endfor</l>
+<c>    </c>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+</hdevelop>

@@ -88,13 +88,13 @@
 <c>* ************************</c>
 <c>* </c>
 <c>* Set obligatory parameters.</c>
-<l>Backbone := 'pretrained_dl_classifier_compact.hdl'</l>
-<l>NumClasses := 2</l>
+<l>Backbone := 'pretrained_dl_classifier_alexnet.hdl'</l>
+<l>NumClasses := 3</l>
 <c>* </c>
 <c>* Image dimensions of the network. Later, these values are</c>
 <c>* used to rescale the images during preprocessing.</c>
-<l>ImageWidth := 640</l>
-<l>ImageHeight := 640</l>
+<l>ImageWidth := 320</l>
+<l>ImageHeight := 256</l>
 <l>ImageNumChannels := 3</l>
 <c>* </c>
 <c>* Set capacity to 'medium', which is sufficient for this task</c>
@@ -104,8 +104,8 @@
 <l>Capacity := 'medium'</l>
 <c>* </c>
 <c>* Percentages for splitting the dataset.</c>
-<l>TrainingPercent := 80</l>
-<l>ValidationPercent := 20</l>
+<l>TrainingPercent := 85</l>
+<l>ValidationPercent := 15</l>
 <c>* </c>
 <c>* In order to get a reproducible split we set a random seed.</c>
 <c>* This means that rerunning the script results in the same split of DLDataset.</c>
@@ -116,17 +116,17 @@
 <c>* ************************************</c>
 <c>* </c>
 <c>* All example data is written to this folder.</c>
-<l>ExampleDataDir := '/home/dika/Documents/PKM_program/Dataset/Plate'</l>
+<l>dataDir := '/home/dika/Pictures/PKM_DATASET'</l>
 <c></c>
 <c>* Path to the image directory.</c>
-<l>HalconImageDir := ExampleDataDir + '/train'</l>
+<l>HalconImageDir := dataDir</l>
 <c>* Path to the Json file of the dataset.</c>
-<l>PillBagJsonFile := HalconImageDir + '/_annotations.coco.json'</l>
-<c>* </c>
+<l>PillBagJsonFile := dataDir + '/result.json'</l>
+<c>*</c>
 <c>* Write the initialized DL object detection model to train it in example part 2.</c>
-<l>DLModelFileName := ExampleDataDir + '/pretrained_dl_model_detection.hdl'</l>
+<l>DLModelFileName := dataDir + '/pretrained_dl_model_detection.hdl'</l>
 <c>* Dataset directory for any outputs written by preprocess_dl_dataset.</c>
-<l>DataDirectory := ExampleDataDir + '/dldataset_plate_bag_' + ImageWidth + 'x' + ImageHeight</l>
+<l>DataDirectory := dataDir + ImageWidth + 'x' + ImageHeight</l>
 <c>* Store preprocess parameters separately in order to use it, e.g., during inference.</c>
 <l>PreprocessParamFileName := DataDirectory + '/dl_preprocess_param.hdict'</l>
 <c>* </c>
@@ -138,9 +138,9 @@
 <l>set_system ('seed_rand', SeedRand)</l>
 <c>* </c>
 <c>* Create the output directory if it does not exist yet.</c>
-<l>file_exists (ExampleDataDir, FileExists)</l>
+<l>file_exists (dataDir, FileExists)</l>
 <l>if (not FileExists)</l>
-<l>    make_dir (ExampleDataDir)</l>
+<l>    make_dir (dataDir)</l>
 <l>endif</l>
 <c>* </c>
 <c>* Read in a DLDataset.</c>

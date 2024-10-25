@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="22.11.3.0">
+<procedure name="main">
+<interface/>
+<body>
+<l>query_available_dl_devices (['runtime', 'runtime'], ['cpu', 'cpu'], DLDeviceHandles)</l>
+<l>if (|DLDeviceHandles| == 0)</l>
+<l>    throw ('No supported device found to continue this example.')</l>
+<l>endif</l>
+<l>DLDevice := DLDeviceHandles[1]</l>
+<c></c>
+<l>dev_open_window (0, 0, 300, 300, 'black', WindowHandle)</l>
+<l>get_system('cuda_devices', Information)</l>
+<l>write_string (WindowHandle, DLDevice)</l>
+<c></c>
+<l>stop()</l>
+<l>create_deep_ocr ([], [], DeepOcrHandle)</l>
+<l>get_deep_ocr_param (DeepOcrHandle, 'recognition_alphabet', RecognitionAlphabet)</l>
+<l>set_deep_ocr_param (DeepOcrHandle, 'device', DLDevice)</l>
+<l>set_deep_ocr_param(DeepOcrHandle,'recognition_image_width', 50)</l>
+<l>list_image_files ('/home/dika/Pictures/PlateCapture', 'default', [], ImageFiles)</l>
+<c></c>
+<l>sum_capture := |ImageFiles|</l>
+<l>iteration := 0</l>
+<c></c>
+<l>while(iteration &lt; sum_capture)</l>
+<l>    read_image(Image, ImageFiles[iteration])</l>
+<l>    dev_display(Image)</l>
+<l>    apply_deep_ocr (Image, DeepOcrHandle, 'auto', DeepOcrResult)</l>
+<l>    wordsOCR := DeepOcrResult.words.word</l>
+<c>    * Visualize the results of the model.</c>
+<l>    dev_disp_text (wordsOCR, 'window', 'top', 'left', 'red', [], [])</l>
+<l>    *dev_disp_text ('Press Run (F5) to continue', 'window', 'bottom', 'left', 'black', [], [])</l>
+<l>    stop()</l>
+<l>    iteration := iteration + 1 </l>
+<l>    wait_seconds(1)</l>
+<l>endwhile</l>
+<l>dev_disp_text ('ALL Image Done Scanning', 'window', 'bottom', 'right', 'black', [], [])</l>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+</hdevelop>

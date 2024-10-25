@@ -108,18 +108,20 @@
 <c>* *****************************************************</c>
 <c>* </c>
 <c>* All example data is written to this folder.</c>
-<l>ExampleDataDir := '/home/dika/Documents/PKM_program/Dataset/Plate'</l>
+<l>DataDir := '/home/dika/Pictures/PKM_DATASET'</l>
 <c>* File path of the initialized model.</c>
-<l>InitialModelFileName := ExampleDataDir + '/pretrained_dl_model_detection.hdl'</l>
+<l>InitialModelFileName := DataDir + '/pretrained_dl_model_detection.hdl'</l>
 <c>* File path of the preprocessed DLDataset.</c>
 <c>* Note: Adapt DataDirectory after preprocessing with another image size.</c>
-<l>DataDirectory := ExampleDataDir + '/dldataset_plate_bag_640x640'</l>
+<l>DataDirectory := DataDir + '320x256'</l>
 <l>DLDatasetFileName := DataDirectory + '/dl_dataset.hdict'</l>
 <c>* </c>
+<c></c>
+<l>OuputDir:= '/home/dika/Pictures/model_baru_pkm'</l>
 <c>* Output path of the best evaluated model.</c>
-<l>BestModelBaseName := ExampleDataDir + '/best_dl_model_detection'</l>
+<l>BestModelBaseName := OuputDir + '/best_dl_model_detection'</l>
 <c>* Output path for the final trained model.</c>
-<l>FinalModelBaseName := ExampleDataDir + '/final_dl_model_detection'</l>
+<l>FinalModelBaseName := OuputDir + '/final_dl_model_detection'</l>
 <c>* </c>
 <c>* *****************************************************</c>
 <c>* ***             Set basic parameters.             ***</c>
@@ -128,23 +130,23 @@
 <c>* </c>
 <c>* Model parameters.</c>
 <c>* Batch size.</c>
-<l>BatchSize := 2</l>
+<l>BatchSize := 5</l>
 <c>* Initial learning rate.</c>
 <l>InitialLearningRate := 0.0005</l>
 <c>* Momentum should be high if batch size is small.</c>
-<l>Momentum := 0.99</l>
+<l>Momentum := 0.85</l>
 <c>* </c>
 <c>* Parameters used by train_dl_model.</c>
 <c>* Number of epochs to train the model.</c>
-<l>NumEpochs := 30</l>
+<l>NumEpochs := 500</l>
 <c>* Evaluation interval (in epochs) to calculate evaluation measures on the validation split.</c>
 <l>EvaluationIntervalEpochs := 1</l>
 <c>* Change the learning rate in the following epochs, e.g., [15, 30].</c>
 <c>* Set it to [] if the learning rate should not be changed.</c>
-<l>ChangeLearningRateEpochs := 30</l>
+<l>ChangeLearningRateEpochs := 450</l>
 <c>* Change the learning rate to the following values, e.g., InitialLearningRate * [0.1, 0.01].</c>
 <c>* The tuple has to be of the same length as ChangeLearningRateEpochs.</c>
-<l>ChangeLearningRateValues := InitialLearningRate * 0.1</l>
+<l>ChangeLearningRateValues :=  InitialLearningRate * 0.04</l>
 <c>* </c>
 <c>* *****************************************************</c>
 <c>* ***           Set advanced parameters.            ***</c>
@@ -231,7 +233,7 @@
 <c>* *****************************************************</c>
 <c>* </c>
 <c>* Check if all necessary files exist.</c>
-<l>check_data_availability (ExampleDataDir, InitialModelFileName, DLDatasetFileName)</l>
+<l>check_data_availability (DataDir, InitialModelFileName, DLDatasetFileName)</l>
 <c>* </c>
 <c>* Read in the model that was initialized during preprocessing.</c>
 <l>read_dl_model (InitialModelFileName, DLModelHandle)</l>
